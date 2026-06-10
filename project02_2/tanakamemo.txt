@@ -1,0 +1,18 @@
+## train
+python -u train_rerank_lora.py \
+  --train_path ../dataset/project02_2/train.jsonl.gz \
+  --eval_path ../dataset/project02_2/eval.jsonl.gz \
+  --out_dir lora_out_minicpm4 \
+  --max_train_records 1000000 \
+  --max_eval_records 20000 \
+  --epochs 1 \
+  --batch 8 \
+  --grad_accum 4 \
+  --max_seq_len 320
+
+
+## infer
+python infer.py \
+  --lora_dir project02/lora_out_minicpm4 \
+  --ctx "今日は冬だ。" \
+  --vowels "a u i"

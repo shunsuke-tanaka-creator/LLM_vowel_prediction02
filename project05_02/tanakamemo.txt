@@ -1,0 +1,39 @@
+## venv
+source /home/shunsuke/Desktop/venv/pytorch_gpu/bin/activate
+
+## 1. データ生成 (CC100 → {stem, ctx, suffix})
+python make_suffix_dataset_cc100.py \
+  --max_rows 2000000 \
+  --out_train ../dataset/project05_02/train.jsonl.gz \
+  --out_eval ../dataset/project05_02/eval.jsonl.gz
+
+## 2. 学習 (語尾SFT + LoRA)
+python train_suffix_lora.py \
+  --train_path ../dataset/project05_02/train.jsonl.gz \
+  --eval_path ../dataset/project05_02/eval.jsonl.gz \
+  --out_dir lora_suffix_out \
+  --max_train_records 2000000 \
+  --max_eval_records 20000 \
+  --epochs 2 \
+  --batch 8 \
+  --grad_accum 4 \
+  --max_seq_len 128
+
+## 3. 推論 (CLI / 単発)
+python infer.py --lora_dir lora_suffix_out --stem "寒" --ctx "今日は" --k 8
+python infer.py --lora_dir lora_suffix_out --stem "目立" --ctx "その建物は" --k 8
+python infer.py --lora_dir lora_suffix_out --stem "走" --k 8
+# 追加: 接続/丁寧/名詞起点パターン
+python infer.py --lora_dir lora_suffix_out --stem "学生" --ctx "私は" --k 8
+python infer.py --lora_dir lora_suffix_out --stem "元気" --ctx "彼は" --k 8
+python infer.py --lora_dir lora_suffix_out --stem "行く" --k 8
+
+## 4. 推論 (HTTP API)
+LORA_DIR=lora_suffix_out uvicorn serve_api:app --host 0.0.0.0 --port 8000
+curl -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" \
+  -d '{"stem":"寒","ctx":"今日は","k":8}'
+
+## smoke (動作確認用)
+# python make_suffix_dataset_cc100.py --max_rows 300 --out_train train_smoke.jsonl.gz --out_eval eval_smoke.jsonl.gz
+# python train_suffix_lora.py --train_path train_smoke.jsonl.gz --eval_path train_smoke.jsonl.gz --out_dir lora_suffix_smoke --max_train_records 200 --max_eval_records 20 --epochs 1 --batch 4 --grad_accum 1
+# python infer.py --lora_dir lora_suffix_smoke --stem "寒" --ctx "今日は" --k 6
