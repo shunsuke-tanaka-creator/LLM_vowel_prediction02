@@ -4,6 +4,9 @@ from __future__ import annotations
 import argparse
 import gzip
 import json
+import logging  # 追加: 学習ログをファイルに残すため
+import os  # 追加: ログ保存ディレクトリ作成のため
+from datetime import datetime  # 追加: ログファイル名に日付時刻を付与するため
 from typing import Iterator, List, Optional
 
 import torch
@@ -16,7 +19,50 @@ from transformers import (
     TrainingArguments,
     Trainer,
     DataCollatorForLanguageModeling,
+    DataCollatorForSeq2Seq,  # 追加: 自前 labels を尊重してパディングする collator
 )
+
+
+# 追加: 標準出力 + 日付時刻付きログファイルの両方に出力するロガーを用意する
+def setup_logging(log_dir: str) -> str:
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, datetime.now().strftime("train_%Y%m%d_%H%M%S.log"))
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+        handlers=[logging.FileHandler(log_path, encoding="utf-8"), logging.StreamHandler()],
+    )
+    return log_path
+
+
+# 追加: trainer.state.log_history から train/eval loss を取り出して学習曲線を画像保存する
+def save_loss_curve(log_history: list, out_png: str):
+    train_steps, train_loss = [], []
+    eval_steps, eval_loss = [], []
+    for rec in log_history:
+        if "loss" in rec and "step" in rec:
+            train_steps.append(rec["step"])
+            train_loss.append(rec["loss"])
+        if "eval_loss" in rec and "step" in rec:
+            eval_steps.append(rec["step"])
+            eval_loss.append(rec["eval_loss"])
+
+    import matplotlib
+    matplotlib.use("Agg")  # 追加: GUI 無し環境でも保存できるようにする
+    import matplotlib.pyplot as plt
+
+    plt.figure()
+    if train_loss:
+        plt.plot(train_steps, train_loss, label="train_loss")
+    if eval_loss:
+        plt.plot(eval_steps, eval_loss, label="eval_loss", marker="o")
+    plt.xlabel("step")
+    plt.ylabel("loss")
+    plt.title("training curve")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(out_png, dpi=120, bbox_inches="tight")
+    plt.close()
 
 
 def iter_jsonl_gz(path: str) -> Iterator[dict]:
@@ -81,6 +127,7 @@ def main():
     ap.add_argument("--train_path", default="../../dataset/project02_2/train.jsonl.gz")
     ap.add_argument("--eval_path", default="../../dataset/project02_2/eval.jsonl.gz")
     ap.add_argument("--out_dir", default="lora_rerank_out")
+    ap.add_argument("--log_dir", default="logs")  # 追加: 学習ログ(日付時刻付き)の保存先
     # コメントに追加: QLoRA(4bit)を使うかどうか。0.5Bでは不要、8B系で有効化推奨
     ap.add_argument("--use_qlora", action="store_true", default=False)
     # コメントに追加: HFモデルのリビジョン pin。MiniCPM4-0.5B 最新(5253c7f)は transformers>=4.50 が必須なため、4.46.3 環境では古い rev を使う
@@ -102,38 +149,50 @@ def main():
 
     args = ap.parse_args()
 
+    # 追加: 日付時刻付きログファイルへの保存を開始
+    log_path = setup_logging(args.log_dir)
+    import transformers  # 追加: 学習中の loss/eval ログもファイルに残すため
+    transformers.utils.logging.set_verbosity_info()  # 追加: Trainer のログを INFO で root ロガー経由でファイル出力
+    logging.info("Log file: %s", log_path)
+    logging.info("Args: %s", vars(args))
+
     # コメントに追加: 大規模データ対応。take_records で全件 list 化せず、jsonl.gz をストリーミング読みしながら format_example して datasets のディスクキャッシュに直接書き出す
-    print("Streaming train records (max=", args.max_train_records, ") from", args.train_path)
+    logging.info("Streaming train records (max=%s) from %s", args.max_train_records, args.train_path)
     ds_train = Dataset.from_generator(
         gen_formatted_texts,
         gen_kwargs={"path": args.train_path, "max_records": args.max_train_records},
     )
 
-    print("Streaming eval records  (max=", args.max_eval_records, ") from", args.eval_path)
+    logging.info("Streaming eval records (max=%s) from %s", args.max_eval_records, args.eval_path)
     ds_eval = Dataset.from_generator(
         gen_formatted_texts,
         gen_kwargs={"path": args.eval_path, "max_records": args.max_eval_records},
     )
 
-    print("Loading tokenizer:", args.model_name, "rev:", args.revision)
+    logging.info("Loading tokenizer: %s rev: %s", args.model_name, args.revision)
     tok = AutoTokenizer.from_pretrained(args.model_name, use_fast=True, trust_remote_code=True, revision=args.revision)  # コメントに追加: MiniCPM4 は custom_code モデルのため trust_remote_code=True が必須
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
 
     def tokenize(batch):
-        out = tok(
-            batch["text"],
-            truncation=True,
-            max_length=args.max_seq_len,
-        )
-        # コメントに追加: labels は DataCollatorForLanguageModeling(mlm=False) に作らせるため、ここでは付けない(長さ不一致で collate が失敗するため)
-        return out
+        # 追加: design通り「ANSWER:\n より後ろ(答え番号+EOS)だけに loss をかける」ため labels を自前作成する
+        input_ids_list, labels_list = [], []  # 追加
+        for text in batch["text"]:  # 追加
+            prompt, answer = text.rsplit("ANSWER:\n", 1)  # 追加: ANSWER:\n を境界に分割
+            prompt = prompt + "ANSWER:\n"  # 追加
+            p_ids = tok(prompt, add_special_tokens=True)["input_ids"]  # 追加
+            a_ids = tok(answer, add_special_tokens=False)["input_ids"] + [tok.eos_token_id]  # 追加: 末尾に EOS
+            ids = (p_ids + a_ids)[: args.max_seq_len]  # 追加
+            labels = ([-100] * len(p_ids) + a_ids)[: args.max_seq_len]  # 追加: prompt をマスク
+            input_ids_list.append(ids)  # 追加
+            labels_list.append(labels)  # 追加
+        return {"input_ids": input_ids_list, "labels": labels_list}  # 追加
 
-    print("Tokenizing...")
+    logging.info("Tokenizing...")
     ds_train = ds_train.map(tokenize, batched=True, remove_columns=["text"])
     ds_eval = ds_eval.map(tokenize, batched=True, remove_columns=["text"])
 
-    print("Loading model:", args.model_name, "use_qlora:", args.use_qlora)  # コメントに追加: 0.5Bは QLoRA 不要、8B 系で有効化
+    logging.info("Loading model: %s use_qlora: %s", args.model_name, args.use_qlora)  # コメントに追加: 0.5Bは QLoRA 不要、8B 系で有効化
     if args.use_qlora:
         bnb = BitsAndBytesConfig(
             load_in_4bit=True,
@@ -180,9 +239,10 @@ def main():
     model.print_trainable_parameters()
     model.enable_input_require_grads()
 
-    collator = DataCollatorForLanguageModeling(
+    collator = DataCollatorForSeq2Seq(  # 変更: 自前 labels を尊重してパディングする
         tokenizer=tok,
-        mlm=False,
+        padding=True,
+        label_pad_token_id=-100,  # 追加: パディングした labels も loss から除外
     )
 
     training_args = TrainingArguments(
@@ -210,13 +270,18 @@ def main():
         data_collator=collator,
     )
 
-    print("Start training...")
+    logging.info("Start training...")
     trainer.train()
 
-    print("Saving...")
+    # 追加: 学習曲線(train/eval loss)を画像として保存。ログと同じタイムスタンプ名にする
+    curve_png = os.path.splitext(log_path)[0] + "_curve.png"
+    save_loss_curve(trainer.state.log_history, curve_png)
+    logging.info("Loss curve saved: %s", curve_png)
+
+    logging.info("Saving...")
     trainer.save_model(args.out_dir)
     tok.save_pretrained(args.out_dir)
-    print("DONE:", args.out_dir)
+    logging.info("DONE: %s", args.out_dir)
 
 
 if __name__ == "__main__":
