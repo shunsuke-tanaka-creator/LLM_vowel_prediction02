@@ -24,15 +24,17 @@ from transformers import (
 
 
 # 追加: 標準出力 + 日付時刻付きログファイルの両方に出力するロガーを用意する
+# 変更: log_dir 直下に日付時刻フォルダ(train_YYYYMMDD_HHMMSS)を作り、その中にログ・曲線・重みを一括保存する。run_dir を返す
 def setup_logging(log_dir: str) -> str:
-    os.makedirs(log_dir, exist_ok=True)
-    log_path = os.path.join(log_dir, datetime.now().strftime("train_%Y%m%d_%H%M%S.log"))
+    run_dir = os.path.join(log_dir, datetime.now().strftime("train_%Y%m%d_%H%M%S"))  # 変更: 実行ごとのフォルダ
+    os.makedirs(run_dir, exist_ok=True)  # 変更
+    log_path = os.path.join(run_dir, "train.log")  # 変更: フォルダ内に train.log
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(message)s",
         handlers=[logging.FileHandler(log_path, encoding="utf-8"), logging.StreamHandler()],
     )
-    return log_path
+    return run_dir  # 変更: 以後の保存に使うフォルダを返す
 
 
 # 追加: trainer.state.log_history から train/eval loss を取り出して学習曲線を画像保存する
@@ -126,7 +128,7 @@ def main():
     ap.add_argument("--model_name", default="openbmb/MiniCPM4-0.5B")
     ap.add_argument("--train_path", default="../../dataset/project02_2/train.jsonl.gz")
     ap.add_argument("--eval_path", default="../../dataset/project02_2/eval.jsonl.gz")
-    ap.add_argument("--out_dir", default="lora_rerank_out")
+    ap.add_argument("--out_dir", default="lora_rerank_out")  # 変更: 保存先は logs/train_YYYYMMDD_HHMMSS/ に一本化したため未使用(後方互換で残す)
     ap.add_argument("--log_dir", default="logs")  # 追加: 学習ログ(日付時刻付き)の保存先
     # コメントに追加: QLoRA(4bit)を使うかどうか。0.5Bでは不要、8B系で有効化推奨
     ap.add_argument("--use_qlora", action="store_true", default=False)
@@ -143,17 +145,18 @@ def main():
     ap.add_argument("--batch", type=int, default=1)
     ap.add_argument("--grad_accum", type=int, default=16)
 
+    ap.add_argument("--no_grad_ckpt", action="store_true", default=False)  # 追加: gradient_checkpointing を無効化して速度優先にする
     ap.add_argument("--lora_r", type=int, default=32)
     ap.add_argument("--lora_alpha", type=int, default=64)
     ap.add_argument("--lora_dropout", type=float, default=0.05)
 
     args = ap.parse_args()
 
-    # 追加: 日付時刻付きログファイルへの保存を開始
-    log_path = setup_logging(args.log_dir)
+    # 追加: 日付時刻付きフォルダ(run_dir)への保存を開始。ログ・曲線・重みをここに一括保存する
+    run_dir = setup_logging(args.log_dir)  # 変更: ログファイルではなく実行フォルダを受け取る
     import transformers  # 追加: 学習中の loss/eval ログもファイルに残すため
     transformers.utils.logging.set_verbosity_info()  # 追加: Trainer のログを INFO で root ロガー経由でファイル出力
-    logging.info("Log file: %s", log_path)
+    logging.info("Run dir: %s", run_dir)  # 変更
     logging.info("Args: %s", vars(args))
 
     # コメントに追加: 大規模データ対応。take_records で全件 list 化せず、jsonl.gz をストリーミング読みしながら format_example して datasets のディスクキャッシュに直接書き出す
@@ -217,7 +220,8 @@ def main():
             revision=args.revision,  # コメントに追加: rev pin
         )
 
-    model.gradient_checkpointing_enable()
+    if not args.no_grad_ckpt:  # 追加: --no_grad_ckpt 指定時は有効化しない(速度優先)
+        model.gradient_checkpointing_enable()
     model.config.use_cache = False
 
     # LoRA: attention + MLP (all-linear)
@@ -246,7 +250,7 @@ def main():
     )
 
     training_args = TrainingArguments(
-        output_dir=args.out_dir,
+        output_dir=run_dir,  # 変更: チェックポイントも日付時刻フォルダ内に保存
         per_device_train_batch_size=args.batch,
         per_device_eval_batch_size=args.batch,
         gradient_accumulation_steps=args.grad_accum,
@@ -273,15 +277,15 @@ def main():
     logging.info("Start training...")
     trainer.train()
 
-    # 追加: 学習曲線(train/eval loss)を画像として保存。ログと同じタイムスタンプ名にする
-    curve_png = os.path.splitext(log_path)[0] + "_curve.png"
+    # 追加: 学習曲線(train/eval loss)を画像として保存。run_dir 内に curve.png として保存
+    curve_png = os.path.join(run_dir, "curve.png")  # 変更
     save_loss_curve(trainer.state.log_history, curve_png)
     logging.info("Loss curve saved: %s", curve_png)
 
     logging.info("Saving...")
-    trainer.save_model(args.out_dir)
-    tok.save_pretrained(args.out_dir)
-    logging.info("DONE: %s", args.out_dir)
+    trainer.save_model(run_dir)  # 変更: 重み(LoRAアダプタ)も run_dir に保存
+    tok.save_pretrained(run_dir)  # 変更
+    logging.info("DONE: %s", run_dir)  # 変更
 
 
 if __name__ == "__main__":

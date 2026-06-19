@@ -60,6 +60,7 @@ def main():
 
     ap.add_argument("--num_cands", type=int, default=32)
     ap.add_argument("--eval_ratio", type=float, default=0.002)
+    ap.add_argument("--keep_ratio", type=float, default=1.0)  # 追加: 全位置から均等に間引く採用率(1.0=従来通り全採用)
 
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
@@ -95,6 +96,8 @@ def main():
 
         # 逐次：次の単語を当てる
         for i in range(1, len(words)):
+            if random.random() >= args.keep_ratio:  # 追加: 全位置から均等に確率サンプリング(位置バイアスなし)
+                continue
             gold = words[i]
             if gold not in vocab:
                 continue

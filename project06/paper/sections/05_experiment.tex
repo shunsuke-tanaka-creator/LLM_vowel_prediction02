@@ -1,0 +1,179 @@
+\section{評価実験}
+
+\subsection{評価指標}
+候補提示型の入力支援であることを踏まえ，Top-1 の完全一致だけでなく
+Top-3 / Top-5 を重視する．母音入力 $\bm{v}_i$，正解 $y_i$，上位 $k$ 候補集合 $\mathcal{Y}_k(\bm{v}_i)$ に対し，
+\begin{align}
+  \mathrm{Acc@}k &= \frac{1}{N}\sum_{i=1}^{N}\mathbf{1}\!\left[y_i \in \mathcal{Y}_k(\bm{v}_i)\right] \\
+  \mathrm{MRR} &= \frac{1}{N}\sum_{i=1}^{N}\frac{1}{\mathrm{rank}_i} \\
+  \mathrm{EM} &= \frac{1}{N}\sum_{i=1}^{N}\mathbf{1}\!\left[\hat{y}_i = y_i\right]
+\end{align}
+を用いる．部分的な近さを評価するため，編集距離に基づく
+CER と WER も補助的に用いる．
+\begin{equation}
+  \mathrm{CER} = \frac{S+D+I}{N_c}, \quad
+  \mathrm{WER} = \frac{S+D+I}{N_w}
+\end{equation}
+ここで $N_c$ は正解文字数，$N_w$ は語数である
+（純日本語文では語分割が無いため WER は文字単位へフォールバックする点に注意）．
+
+入力効率は KSPC と入力削減率で評価する．
+\begin{equation}
+  \mathrm{KSPC} = \frac{K}{C}, \quad
+  \mathrm{Reduction} = 1 - \frac{K_{\mathrm{proposed}}}{K_{\mathrm{baseline}}}
+\end{equation}
+UI 効率はキー数と画面占有率
+$\mathrm{ScreenOccupancy} = A_{\mathrm{keyboard}}/A_{\mathrm{screen}}$
+で評価する．画面占有率は実測値が無いため本稿では \texttt{XXX} とし，
+測定方法（端末解像度に対するキーボード描画領域の面積比）のみ示す．
+
+\subsection{比較対象と実装状況}
+比較対象を表\ref{tab:input}に整理する．
+現時点でコードから確認できる範囲では，提案手法（生成型）の推論・評価
+（\texttt{eval\_restore.py}：top1/top-$k$ 完全一致と文字精度）は実装済みである．
+一方，本稿の評価枠組みで必要な
+Base LLM（LoRA 無し），辞書・頻度ベース baseline，random ranking baseline は，
+生成型 project06 には未実装であり \texttt{[今後比較予定]} とする
+（reranker 系には頻度 baseline の診断コードが存在するが，形式が異なるため本稿の対象外）．
+従来日本語 IME・フリック・QWERTY・かな入力との
+キー数・KSPC・画面占有率の比較は，
+キー数のように設計から定まる値以外は実測（ユーザ実験）を要する．
+
+\begin{table*}[t]
+  \centering\small
+  \caption{入力効率比較（キー数は設計値，他は \texttt{XXX} / 実測待ち）}
+  \label{tab:input}
+  \begin{tabular}{lccccc}
+    \toprule
+    Method & Keys & KSPC & Reduction & Screen Occupancy & Human Study Required \\
+    \midrule
+    提案手法（母音入力 + LoRA LLM）& 5（＋\texttt{n}）& XXX & XXX & XXX & 要 \\
+    Base LLM without LoRA & 5（＋\texttt{n}）& XXX & --- & XXX & 要 [今後比較予定] \\
+    従来日本語 IME & 端末依存 & XXX & ---（基準）& XXX & 要 \\
+    フリック入力 & 12 程度 & XXX & XXX & XXX & 要 \\
+    QWERTY / ローマ字 & 26 以上 & XXX & XXX & XXX & 要 \\
+    かな入力 & 50 音相当 & XXX & XXX & XXX & 要 \\
+    辞書・頻度ベース baseline & --- & --- & --- & --- & [今後比較予定] \\
+    random ranking baseline & --- & --- & --- & --- & [今後比較予定] \\
+    \bottomrule
+  \end{tabular}
+\end{table*}
+
+\subsection{精度評価とアブレーション}
+精度評価は表\ref{tab:acc}の枠組みで行う．数値は評価コード
+（\texttt{paper/scripts/evaluate\_for\_paper.py}）で算出し，確定後に差し替える．
+アブレーション（表\ref{tab:abl}）では，文脈の有無，LoRA の有無，ビーム幅，
+学習データ量などの寄与を評価する．
+
+\begin{table}[t]
+  \centering\small
+  \caption{精度評価（数値は実験後に確定）}
+  \label{tab:acc}
+  \begin{tabular}{lccccccc}
+    \toprule
+    Method & Acc@1 & Acc@3 & Acc@5 & MRR & CER & WER & EM \\
+    \midrule
+    提案手法 & XXX & XXX & XXX & XXX & XXX & XXX & XXX \\
+    Base LLM & XXX & XXX & XXX & XXX & XXX & XXX & XXX \\
+    頻度 baseline & XXX & XXX & XXX & XXX & XXX & XXX & XXX \\
+    random & XXX & XXX & XXX & XXX & XXX & XXX & XXX \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[t]
+  \centering\small
+  \caption{アブレーション（数値は実験後に確定）}
+  \label{tab:abl}
+  \begin{tabular}{lcccl}
+    \toprule
+    Condition & Acc@1 & Acc@5 & MRR & CER \\
+    \midrule
+    母音のみ（文脈なし）& XXX & XXX & XXX & XXX \\
+    母音＋文脈 & XXX & XXX & XXX & XXX \\
+    LoRA なし（base）& XXX & XXX & XXX & XXX \\
+    ビーム幅変更 & XXX & XXX & XXX & XXX \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{実ユーザ実験の計画（認知負荷評価）}
+実利用者の操作を要する評価は本稿では未実施であり計画のみ示す
+（得られる値はすべて実施後に確定する。現時点では \texttt{XXX}）。
+本実験用に，スマートフォン／PC のブラウザから LAN 経由で利用できる
+計測 Web アプリ（\texttt{study\_app.py}）を実装した。被験者 ID を入力した上で，
+IME モード（Level~1--3）・母音モード（Level~1--3）・IME アンケート・母音アンケートの
+モードを選び，各試行の客観指標とアンケートを自動的に CSV へ記録する。
+
+\subsubsection{評価の目的}
+提案手法である母音入力方式では，従来の日本語 IME には存在しない認知的処理が要求される。
+具体的には，利用者は入力したい文章を母音列へ変換し，その母音列を保持しながら入力を行う必要がある。
+そのため本研究では，入力精度や入力速度だけでなく，利用時の認知負荷についても評価を行う。
+認知負荷の評価にあたっては，広く利用されている主観評価手法である
+NASA-TLX\cite{hart1988nasatlx}を参考にした。
+ただし本研究では母音入力特有の負荷を分析するため，一般的な精神的負荷を評価するだけでなく，
+\textbf{母音変換負荷}（提示文を母音列へ変換する音韻変換の負荷）と
+\textbf{記憶保持負荷}（母音列を保持しながら入力するワーキングメモリ負荷）を
+独立した評価項目として設計した。
+
+\subsubsection{リサーチクエスチョン}
+\begin{itemize}
+  \item \textbf{RQ1}：母音入力は通常 IME と比較して入力効率を向上させるか。
+  \item \textbf{RQ2}：母音入力における認知負荷はどこから生じるか（母音変換負荷か記憶保持負荷か）。
+  \item \textbf{RQ3}：文章長の増加によって，母音変換負荷と記憶保持負荷はどのように変化するか。
+\end{itemize}
+
+\subsubsection{実験設計}
+実験は次の 2 種類を実施する。
+\paragraph{(1) 従来 IME との比較（RQ1）}
+提案手法の有効性を検証するため，通常の日本語 IME 入力と母音入力を比較する。
+評価項目は入力時間，キー入力数，修正回数（Backspace 数），正答率，および主観評価とする。
+
+\paragraph{(2) 母音入力内での認知負荷分析（RQ2，RQ3）}
+母音入力方式において，文章長による認知負荷の変化を分析する。
+課題文を Level~1：単語，Level~2：10 文字以内の短文，Level~3：一般文（学習時上限の 40 字以内）
+の 3 段階に分類し，文章長の増加に伴う認知負荷の変化および実用可能な入力範囲を調査する。
+記憶保持負荷を意図的に課すため，課題文は一定時間提示した後に画面から隠し，
+記憶した状態で入力させる。
+
+\subsubsection{客観指標と負荷の対応}
+計測アプリは試行ごとに次を記録する。これらは 2 種類の認知負荷の代理指標を与える。
+\begin{itemize}
+  \item 初動時間 $T_{\mathrm{init}}$（課題文を隠した後から最初の打鍵まで）と
+        母音化誤り率 $\mathrm{CER}_{\mathrm{vowel}}$
+        （被験者が打った母音列と正解母音列\footnote{\texttt{vowel\_utils} で算出。}の編集距離）は
+        \textbf{母音変換負荷}を反映する。
+  \item 平均打鍵間隔 $\bar{T}_{\mathrm{IKI}}$ と修正回数（Backspace 数）は
+        \textbf{記憶保持負荷}を反映する。
+  \item 総入力時間 $T_{\mathrm{total}}$，正答率，候補選択順位は総合的な効率を反映する。
+\end{itemize}
+
+\subsubsection{主観評価項目}
+各タスク終了後に，以下の項目について 7 段階評価
+（1：全くそう思わない～7：非常にそう思う）を実施する。
+\paragraph{母音入力条件（7 項目）}
+\begin{enumerate}
+  \item 提示された文章を母音列に変換するのは難しかった（母音変換負荷）
+  \item 母音列を覚えながら入力するのは難しかった（記憶保持負荷）
+  \item 入力操作そのものは難しかった
+  \item 入力中に混乱やストレスを感じた
+  \item 入力後に疲れを感じた
+  \item 通常の日本語入力より効率的だと感じた
+  \item 日常的に利用したいと思った
+\end{enumerate}
+\paragraph{通常 IME 条件（3 項目）}
+\begin{enumerate}
+  \item 入力操作そのものは難しかった
+  \item 入力中に混乱やストレスを感じた
+  \item 入力後に疲れを感じた
+\end{enumerate}
+このように，母音変換負荷と記憶保持負荷を独立した項目として測ることで，
+単一の精神的負荷尺度では区別できない負荷の由来を分離して分析できる。
+
+\subsubsection{統計解析}
+RQ1・RQ3 の手法間比較には対応あり $t$ 検定または Wilcoxon の符号順位検定を用いる。
+Level の主効果（RQ3）には反復測定 ANOVA または Friedman 検定を用い，
+効果量は Cohen's $d$ または $r$，有意水準は $p<.05$ とする。
+特に，$T_{\mathrm{init}}$・母音変換負荷と $\bar{T}_{\mathrm{IKI}}$・記憶保持負荷について
+Level~1$\to$2$\to$3 の増加傾向を比較することで，
+母音入力のボトルネックが音韻変換と記憶保持のいずれにあるかを議論する。

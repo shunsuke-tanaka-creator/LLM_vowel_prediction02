@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>母音列 → 文 復元 GUI (project07)</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #1a1d27;
+    --border: #2b2f3a;
+    --accent: #5b9dff;
+    --text: #e6e8ee;
+    --muted: #8a90a0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  input[type=text], textarea {
+    width: 100%;
+    background: #11131b;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 15px;
+    font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 48px; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
+  .row .field { flex: 1; min-width: 120px; }
+  input[type=number] {
+    width: 100%;
+    background: #11131b;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+  .field-block { margin-bottom: 16px; }
+  .endpoint { margin-bottom: 16px; }
+  button {
+    margin-top: 20px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .status { font-size: 13px; color: var(--muted); margin: 12px 0 0; min-height: 18px; }
+  .status.error { color: #ff6b6b; }
+  ol.cands { list-style: none; padding: 0; margin: 0; counter-reset: c; }
+  ol.cands li {
+    counter-increment: c;
+    background: #11131b;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px 12px 44px;
+    margin-bottom: 8px;
+    position: relative;
+    font-size: 16px;
+  }
+  ol.cands li::before {
+    content: counter(c);
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px; height: 22px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .empty { color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>母音列 → 文 復元 GUI</h1>
+  <div class="sub">project06 の <code>POST /predict</code> を叩く簡易フロント (project07)</div>
+
+  <div class="panel">
+    <div class="endpoint">
+      <label for="endpoint">API エンドポイント</label>
+      <input type="text" id="endpoint" value="/predict">
+    </div>
+
+    <div class="field-block">
+      <label for="vowels">母音列 (vowels) — 空白区切り a/i/u/e/o/n</label>
+      <input type="text" id="vowels" value="o o a e n i a a u a a" placeholder="o o a e n i a a u a a">
+    </div>
+
+    <div class="field-block">
+      <label for="ctx">文脈 (ctx) — 任意。空なら内部で &lt;NONE&gt;</label>
+      <textarea id="ctx" placeholder="一個前の文 (任意)"></textarea>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="k">k (候補数)</label>
+        <input type="number" id="k" value="8" min="1">
+      </div>
+      <div class="field">
+        <label for="num_beams">num_beams</label>
+        <input type="number" id="num_beams" value="8" min="1">
+      </div>
+      <div class="field">
+        <label for="max_new_tokens">max_new_tokens</label>
+        <input type="number" id="max_new_tokens" value="64" min="1">
+      </div>
+    </div>
+
+    <button id="run">復元する</button>
+    <p class="status" id="status"></p>
+  </div>
+
+  <div class="panel">
+    <label>復元文候補 (TopK)</label>
+    <ol class="cands" id="cands"></ol>
+    <p class="empty" id="empty">まだ結果はありません。</p>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const btn = $("run");
+const statusEl = $("status");
+const candsEl = $("cands");
+const emptyEl = $("empty");
+
+async function run() {
+  const endpoint = $("endpoint").value.trim();
+  const vowels = $("vowels").value.trim();
+  const ctx = $("ctx").value.trim();
+  const k = parseInt($("k").value, 10);
+  const num_beams = parseInt($("num_beams").value, 10);
+  const max_new_tokens = parseInt($("max_new_tokens").value, 10);
+
+  if (!vowels) {
+    statusEl.textContent = "母音列を入力してください。";
+    statusEl.className = "status error";
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.className = "status";
+  statusEl.textContent = "推論中...";
+  candsEl.innerHTML = "";
+  emptyEl.style.display = "none";
+
+  const t0 = performance.now();
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ vowels, ctx, k, num_beams, max_new_tokens }),
+  });
+  if (!res.ok) {
+    throw new Error("HTTP " + res.status);
+  }
+  const data = await res.json();
+  const dt = ((performance.now() - t0) / 1000).toFixed(2);
+
+  const cands = data.candidates || [];
+  if (cands.length === 0) {
+    emptyEl.textContent = "候補が返りませんでした。";
+    emptyEl.style.display = "block";
+  } else {
+    for (const c of cands) {
+      const li = document.createElement("li");
+      li.textContent = c;
+      candsEl.appendChild(li);
+    }
+  }
+  statusEl.textContent = `完了 (${cands.length} 候補 / ${dt}s)`;
+}
+
+btn.addEventListener("click", () => {
+  run().catch((e) => {
+    statusEl.className = "status error";
+    statusEl.textContent = "エラー: " + e.message;
+    emptyEl.style.display = "block";
+  }).finally(() => {
+    btn.disabled = false;
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+level,id,text,vowels,n_chars,alts
+1,L1-01,おはよう,o a o u,4,
+1,L1-02,パソコン,a o o n,4,
+1,L1-03,電話,e n a,2,
+2,L2-01,今から帰る,i a a a a e u,5,
+2,L2-02,気をつけてね,i o u e e e,6,気を付けて
+2,L2-03,お腹がすいた,o a a a u i a,6,お腹が空いた
+3,L3-01,来週はパソコンを買いに行く,a i u u a a o o n o a i i i u,13,来週はパソコンを、買いに行く
+3,L3-02,子供の病院に行こう,o o o o o u i n i i o u,9,
+3,L3-03,車で行こうか、電車で行こうか,u u a e i o u a e n a e i o u a,14,車で行こうか電車で行こうか

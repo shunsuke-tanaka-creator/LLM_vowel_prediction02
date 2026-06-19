@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>母音入力 認知負荷実験</title>
+<style>
+  :root { --bg:#0f1220; --card:#1a1f36; --fg:#eef; --accent:#5b8cff; --ok:#37c871; --warn:#ffb24d; }
+  * { box-sizing: border-box; }
+  /* 追加: キーボード表示時の画面上シフト(自動スクロール)を防ぐためページ自体を固定 */
+  html, body { height:100%; overflow:hidden; }
+  body { margin:0; font-family: -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+         background:var(--bg); color:var(--fg); -webkit-text-size-adjust:100%;
+         position:fixed; top:0; left:0; right:0; bottom:0; overflow:hidden;  /* 追加: スクロールロック */ }
+  /* 追加: ページは固定し、コンテンツが多い時はこの内側だけスクロールさせる */
+  .wrap { max-width:640px; margin:0 auto; padding:16px; height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  h1 { font-size:18px; margin:8px 0 16px; }
+  .card { background:var(--card); border-radius:14px; padding:16px; margin-bottom:14px; }
+  label { display:block; font-size:13px; opacity:.8; margin-bottom:6px; }
+  input[type=text] { width:100%; font-size:18px; padding:12px; border-radius:10px; border:none;
+                     background:#0c0f1c; color:var(--fg); }
+  .btn { display:inline-block; width:100%; font-size:17px; padding:14px; border:none; border-radius:12px;
+         background:var(--accent); color:#fff; margin-top:10px; cursor:pointer; }
+  .btn.sub { background:#2a3252; }
+  .btn.ok { background:var(--ok); }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .target { font-size:26px; font-weight:700; text-align:center; padding:24px 8px; letter-spacing:1px; }
+  .hidden { display:none; }
+  .invisible { visibility:hidden; }  /* 追加: 高さを保ったまま隠す(レイアウトジャンプ防止) */
+  .muted { opacity:.6; font-size:13px; }
+  .cand { padding:12px; background:#0c0f1c; border-radius:10px; margin-bottom:8px; font-size:18px; cursor:pointer; }
+  .cand.sel { outline:2px solid var(--accent); }
+  .q { margin:14px 0; }
+  .q .qtext { font-size:15px; margin-bottom:8px; }
+  .scale { display:flex; justify-content:space-between; gap:4px; }
+  .scale button { flex:1; padding:10px 0; border:none; border-radius:8px; background:#0c0f1c; color:var(--fg); font-size:16px; }
+  .scale button.on { background:var(--accent); color:#fff; }
+  .progress { font-size:13px; opacity:.7; text-align:center; margin-bottom:8px; }
+  .timer { text-align:center; font-size:14px; color:var(--warn); }
+  /* 追加: 母音入力の注意事項を目立たせる帯 */
+  .vowelRule { background:rgba(255,178,77,.15); border:1px solid var(--warn); border-radius:10px;
+               padding:10px 12px; margin-bottom:10px; font-size:14px; line-height:1.6; color:var(--warn); }
+  .vowelRule b { color:#fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>母音入力 認知負荷実験</h1>
+
+  <!-- 名前 + モード選択 -->
+  <div id="home" class="card">
+    <label>お名前(被験者ID)</label>
+    <input id="name" type="text" placeholder="例: tanaka01" autocomplete="off">
+    <div style="height:12px"></div>
+    <label>モードを選択</label>
+    <button class="btn" onclick="startTask('ime')">標準IME</button>
+    <button class="btn sub" onclick="startTask('vowel')">母音(推論こみ)</button>
+    <button class="btn sub" onclick="startTask('vowel_noinfer')">母音(推論はせず)</button>
+    <button class="btn ok" onclick="startSurvey('ime')">アンケート標準</button>
+    <button class="btn ok" onclick="startSurvey('vowel')">アンケート母音</button>
+    <button class="btn sub" onclick="runAnalyze()">解析</button>
+    <div id="analyzeResult" class="muted" style="margin-top:10px; white-space:pre-line"></div>
+  </div>
+
+  <!-- 課題提示 / 入力 -->
+  <div id="task" class="card hidden">
+    <div class="progress" id="progress"></div>
+
+    <!-- 提示フェーズ -->
+    <div id="phaseShow" class="hidden">
+      <div class="muted" id="modeHint"></div>
+      <div id="vowelRule" class="vowelRule hidden">
+        母音入力の注意：<b>「ん」→ん</b> / <b>しゃ・ちゃ等→あ</b> / <b>しゅ・ちゅ等→う</b> / <b>しょ・ちょ等→お</b>
+      </div>
+      <div class="target" id="targetText"></div>
+      <div class="timer" id="showTimer"></div>
+      <button class="btn" id="readyBtn" onclick="beginShow()">開始</button>
+    </div>
+
+    <!-- 入力フェーズ -->
+    <div id="phaseInput" class="hidden">
+      <div class="muted" id="inputHint"></div>
+      <input id="answer" type="text" placeholder="ここに入力" autocomplete="off" autocapitalize="off" autocorrect="off">
+      <div id="vowelArea" class="hidden">
+        <div class="muted">母音列を入力 → 候補生成 → 選択</div>
+        <button class="btn sub" onclick="genCandidates()">候補を生成</button>
+        <div id="cands"></div>
+      </div>
+      <button class="btn ok" onclick="submitTrial()">確定して次へ</button>
+      <button class="btn sub" onclick="goHome()">中断して戻る</button>
+    </div>
+  </div>
+
+  <!-- アンケート -->
+  <div id="survey" class="card hidden">
+    <div class="muted" id="surveyHint"></div>
+    <div id="surveyQuestions"></div>
+    <button class="btn ok" onclick="submitSurvey()">送信</button>
+    <button class="btn sub" onclick="goHome()">戻る</button>
+  </div>
+</div>
+
+<script>
+const API = "";  // 同一オリジン
+let state = {};
+
+// 追加: 測定セッション識別子。ページを開いた時刻(分まで)で固定し、全リクエストに付与する。
+// 同一セッションの trial / survey / analyze を同じフォルダにまとめるため。
+const SESSION = (function(){
+  const d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}`;
+})();
+
+function $(id){ return document.getElementById(id); }
+function nameVal(){ return ($("name").value || "").trim(); }
+
+function goHome(){
+  $("home").classList.remove("hidden");
+  $("task").classList.add("hidden");
+  $("survey").classList.add("hidden");
+}
+
+// ========== 課題(IME / 母音(推論こみ) / 母音(推論なし)) ==========
+// mode 内で Level1→2→3 を順に出す(全レベルの課題文を連結)
+async function startTask(mode){
+  if(!nameVal()){ alert("名前を入力してください"); return; }
+  let all = [];
+  for(const lv of [1,2,3]){
+    const r = await fetch(`${API}/api/sentences?level=${lv}`);
+    if(!r.ok){ alert("課題文取得失敗: " + (await r.text())); return; }
+    const data = await r.json();
+    all = all.concat(data.sentences);
+  }
+  state = { mode, idx:0, sentences:all };
+  $("home").classList.add("hidden");
+  $("survey").classList.add("hidden");
+  $("task").classList.remove("hidden");
+  showNext();
+}
+
+// mode が母音入力(推論あり/なし)か
+function isVowelMode(){ return state.mode === 'vowel' || state.mode === 'vowel_noinfer'; }
+
+function showNext(){
+  if(state.idx >= state.sentences.length){
+    alert("このモードの課題は終了です。アンケートに進んでください。");
+    goHome();
+    return;
+  }
+  const s = state.sentences[state.idx];
+  state.cur = s;
+  const modeLabel = state.mode==='ime' ? 'IME'
+    : state.mode==='vowel' ? '母音(推論こみ)' : '母音(推論なし)';
+  $("progress").textContent = `${modeLabel}  L${s.level}  (${state.idx+1}/${state.sentences.length})`;
+  $("phaseShow").classList.remove("hidden");
+  $("phaseShow").classList.remove("invisible");  // 追加: 前回付けた invisible を解除して再表示
+  $("vowelRule").classList.toggle("hidden", !isVowelMode());  // 追加: 母音入力モードのみ注意事項を表示
+  $("phaseInput").classList.add("hidden");
+  $("targetText").textContent = "";  // 開始ボタンを押すまで隠す
+  $("modeHint").textContent = "";  // 変更: 「開始」を押して文を覚え〜の説明文を非表示
+  $("showTimer").textContent = "";
+  // 追加: 最初の1回だけボタンタップでキーボードを開く。それ以降は自動で beginShow() に進む。
+  if(!state.started){
+    $("readyBtn").classList.remove("hidden");
+  } else {
+    $("readyBtn").classList.add("hidden");
+    beginShow();
+  }
+}
+
+// 最初の1回はユーザのタップ(ジェスチャ)で呼ばれる。ここで入力欄を focus してキーボードを開かせる。
+// それ以降は showNext() から自動で呼ばれる(focus は最初のものを維持するため触らない)。
+function beginShow(){
+  $("readyBtn").classList.add("hidden");
+  // キーボードを開いたまま保つため、提示フェーズ中に入力欄を先に focus する
+  const ans = $("answer");
+  $("phaseInput").classList.remove("hidden");  // 入力欄を表示(focus維持のため)。覚える間は locked で打てない
+  ans.value = "";
+  // 追加: 入力フェーズのヒント/候補欄は提示中に先にセットしておく(消失時の高さ変動=レイアウトジャンプ防止)
+  $("cands").innerHTML = "";
+  if(state.mode === 'vowel'){
+    $("vowelArea").classList.remove("hidden");
+    $("inputHint").textContent = "";  // 変更: キーワード下のうっすらした説明文を非表示
+    ans.placeholder = "a i u e o n ...";
+  } else if(state.mode === 'vowel_noinfer'){
+    $("vowelArea").classList.add("hidden");
+    $("inputHint").textContent = "";  // 変更: キーワード下のうっすらした説明文を非表示
+    ans.placeholder = "ここに入力";
+  } else {
+    $("vowelArea").classList.add("hidden");
+    $("inputHint").textContent = "";  // 変更: キーワード下のうっすらした説明文を非表示
+    ans.placeholder = "ここに入力";
+  }
+  if(!state.started){ ans.focus(); state.started = true; }  // 追加: 最初のジェスチャ起点でのみ focus(以降は維持されたキーボードを使う)
+  state.locked = true;     // 追加: 覚える3秒間は入力をブロック(キーボードは出したまま)
+  bindKeyMetrics(ans);     // 入力ブロックも兼ねるので先にバインドしておく
+  const s = state.cur;
+  $("targetText").textContent = s.text;
+  // 提示時間: 一律3秒で自動的に隠れる
+  let sec = 3;
+  $("showTimer").textContent = `あと ${sec} 秒(覚えてください。まだ入力できません)`;
+  clearInterval(state.showTimerId);
+  state.showTimerId = setInterval(()=>{
+    sec--;
+    if(sec<=0){ clearInterval(state.showTimerId); hideTarget(); }
+    else $("showTimer").textContent = `あと ${sec} 秒(覚えてください。まだ入力できません)`;
+  },1000);
+}
+
+function hideTarget(){
+  clearInterval(state.showTimerId);
+  $("phaseShow").classList.add("invisible");  // 変更: hidden(display:none)ではなく invisible で隠し、高さを保つ(レイアウトジャンプ防止)
+  $("phaseInput").classList.remove("hidden");
+  // 計測初期化(入力欄は beginShow で既に focus 済み = キーボード維持。focus は触らない)
+  state.hideTime = performance.now();
+  state.firstKeyTime = null;
+  state.keystrokes = 0;
+  state.backspaces = 0;
+  state.lastKeyTime = null;
+  state.ikis = [];
+  state.selectedRank = -1;
+  state.selectedText = "";
+  const ans = $("answer");
+  ans.value = "";
+  state.locked = false;  // 追加: 覚える時間が終わったので入力可能にする(keydownブロック解除)
+}
+
+function bindKeyMetrics(ans){
+  // iOS のソフトキーボードは keydown が安定しないため beforeinput で入力を制御・計測する。
+  ans.onbeforeinput = (e)=>{
+    if(state.locked){ e.preventDefault(); return; }  // 覚える間は入力をブロック
+    const now = performance.now();
+    if(state.firstKeyTime === null){ state.firstKeyTime = now; }
+    if(e.inputType && e.inputType.startsWith("delete")){ state.backspaces++; }
+    else { state.keystrokes++; }
+    if(state.lastKeyTime !== null){ state.ikis.push(now - state.lastKeyTime); }
+    state.lastKeyTime = now;
+  };
+  // 物理キーボード(PC)向けの保険。ロック中はブロックする。
+  ans.onkeydown = (e)=>{
+    if(state.locked){ e.preventDefault(); }
+  };
+}
+
+async function genCandidates(){
+  const vowels = $("answer").value.trim();
+  if(!vowels){ alert("母音列を入力してください"); return; }
+  const r = await fetch(`${API}/api/predict`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ vowels, k:8 })
+  });
+  if(!r.ok){ alert("候補生成失敗: " + (await r.text())); return; }
+  const data = await r.json();
+  const box = $("cands");
+  box.innerHTML = "";
+  data.candidates.forEach((c, i)=>{
+    const div = document.createElement("div");
+    div.className = "cand";
+    div.textContent = `${i+1}. ${c}`;
+    div.onclick = ()=>{
+      document.querySelectorAll(".cand").forEach(x=>x.classList.remove("sel"));
+      div.classList.add("sel");
+      state.selectedRank = i+1;
+      state.selectedText = c;
+    };
+    box.appendChild(div);
+  });
+  $("answer").focus();
+}
+
+async function submitTrial(){
+  const now = performance.now();
+  const tInit = state.firstKeyTime ? (state.firstKeyTime - state.hideTime) : (now - state.hideTime);
+  const tTotal = now - (state.firstKeyTime || state.hideTime);
+  const meanIki = state.ikis.length ? state.ikis.reduce((a,b)=>a+b,0)/state.ikis.length : 0;
+  let typed, typedVowels="";
+  if(state.mode === 'vowel'){
+    if(state.selectedRank < 0){ alert("候補を選択してください"); return; }
+    typed = state.selectedText;
+    typedVowels = $("answer").value.trim();
+  } else {
+    // ime / vowel_noinfer: 最終的な文を入力(vowel_noinfer は iPhone拡張で変換済み)
+    typed = $("answer").value.trim();
+    if(!typed){ alert("入力してください"); return; }
+  }
+  // 正解判定: text または許容表記(alts, | 区切り)のいずれかと一致すれば正解。追加。
+  const accepts = [state.cur.text, ...((state.cur.alts || "").split("|").filter(Boolean))];
+  const success = accepts.includes(typed) ? 1 : 0;
+  await fetch(`${API}/api/trial`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      name: nameVal(), mode: state.mode, level: state.cur.level,
+      sentence_id: state.cur.id, gold: state.cur.text, typed,
+      typed_vowels: typedVowels,
+      t_init_ms: tInit, t_total_ms: tTotal,
+      keystrokes: state.keystrokes, backspaces: state.backspaces,
+      mean_iki_ms: meanIki, selected_rank: state.selectedRank, success,
+      session: SESSION
+    })
+  });
+  if(!success){
+    // 正解するまで次へ進まない(誤りログは記録済み)。同じ課題を再提示する。
+    alert("不正解です。もう一度同じ文に挑戦してください。");
+    showNext();  // state.idx を進めないので同じ課題が再提示される
+    return;
+  }
+  state.idx++;
+  showNext();
+}
+
+// ========== アンケート ==========
+let surveyState = {};
+async function startSurvey(mode){
+  if(!nameVal()){ alert("名前を入力してください"); return; }
+  const r = await fetch(`${API}/api/questions`);
+  const data = await r.json();
+  const qs = data[mode];
+  surveyState = { mode, keys:Object.keys(qs), answers:{} };
+  $("surveyHint").textContent = (mode==='vowel'?'母音入力':'通常IME') + " について 1(全くそう思わない)〜7(非常にそう思う) で回答";
+  const box = $("surveyQuestions");
+  box.innerHTML = "";
+  Object.entries(qs).forEach(([key, text])=>{
+    const wrap = document.createElement("div");
+    wrap.className = "q";
+    const t = document.createElement("div");
+    t.className = "qtext"; t.textContent = text;
+    const scale = document.createElement("div");
+    scale.className = "scale";
+    for(let v=1; v<=7; v++){
+      const b = document.createElement("button");
+      b.textContent = v;
+      b.onclick = ()=>{
+        surveyState.answers[key] = v;
+        scale.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+        b.classList.add("on");
+      };
+      scale.appendChild(b);
+    }
+    wrap.appendChild(t); wrap.appendChild(scale);
+    box.appendChild(wrap);
+  });
+  $("home").classList.add("hidden");
+  $("task").classList.add("hidden");
+  $("survey").classList.remove("hidden");
+}
+
+async function submitSurvey(){
+  if(Object.keys(surveyState.answers).length < surveyState.keys.length){
+    alert("全項目に回答してください"); return;
+  }
+  await fetch(`${API}/api/survey`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ name:nameVal(), mode:surveyState.mode, answers:surveyState.answers, session:SESSION })
+  });
+  alert("回答を保存しました。ありがとうございました。");
+  goHome();
+}
+
+// ========== 解析(標準IME vs 母音(推論なし) の t_total_ms 比較) ==========
+async function runAnalyze(){
+  if(!nameVal()){ alert("名前を入力してください"); return; }
+  const r = await fetch(`${API}/api/analyze?name=${encodeURIComponent(nameVal())}&session=${encodeURIComponent(SESSION)}`);
+  if(!r.ok){ $("analyzeResult").textContent = "解析失敗: " + (await r.text()); return; }
+  const d = await r.json();
+  if(d.ime_n === 0 || d.vowel_n === 0){
+    $("analyzeResult").textContent = "標準IME・母音(推論なし)両方の課題を完了してください。";
+    return;
+  }
+  const faster = d.ime_mean - d.vowel_mean;  // 正なら母音が速い
+  const pct = d.ime_mean ? (faster / d.ime_mean * 100) : 0;
+  const verdict = faster > 0
+    ? `母音(推論なし)が ${Math.abs(faster).toFixed(0)}ms (${pct.toFixed(1)}%) 速い`
+    : `母音(推論なし)が ${Math.abs(faster).toFixed(0)}ms (${Math.abs(pct).toFixed(1)}%) 遅い`;
+  $("analyzeResult").textContent =
+    `標準IME 平均 t_total: ${d.ime_mean.toFixed(0)}ms (n=${d.ime_n})\n`
+    + `母音(推論なし) 平均 t_total: ${d.vowel_mean.toFixed(0)}ms (n=${d.vowel_n})\n`
+    + verdict + `\n`
+    + `\n`
+    + `t_init 平均: 標準IME ${d.ime_init_mean.toFixed(0)}ms / 母音 ${d.vowel_init_mean.toFixed(0)}ms\n`
+    + `mean_iki 平均: 標準IME ${d.ime_iki_mean.toFixed(0)}ms / 母音 ${d.vowel_iki_mean.toFixed(0)}ms`;
+}
+
+// 追加: iOS Safari でキーボード表示時にページ全体が上にシフトするのを打ち消す。
+// visualViewport / scroll / フォーカスのたびに強制的にスクロール位置を 0 に戻す。
+function pinTop(){
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+}
+window.addEventListener("scroll", pinTop, { passive:true });
+document.addEventListener("focusin", ()=>{ requestAnimationFrame(pinTop); setTimeout(pinTop, 300); });
+if(window.visualViewport){
+  window.visualViewport.addEventListener("scroll", pinTop);
+  window.visualViewport.addEventListener("resize", pinTop);
+}
+</script>
+</body>
+</html>

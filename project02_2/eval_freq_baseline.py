@@ -8,6 +8,8 @@ import gzip
 import json
 from collections import defaultdict
 
+from tqdm import tqdm  # 追加: 推論進捗バー表示用
+
 
 def load_vowel_rank(vowel2cands_path: str):
     # word -> その母音列内での頻度順位(0が最頻) を引けるようにする
@@ -51,16 +53,16 @@ def score_candidate(model, tok, prompt_ids, num_str: str, torch) -> float:
     return total
 
 
-# 追加: LoRA モデルを 1 サンプル推論して 1-based の予測候補番号を返す
-def predict_index(model, tok, ex, torch) -> int:
+# 変更: LoRA モデルを 1 サンプル推論し、スコア降順の候補番号(1-based)リストを返す(top-k 比較用)
+def predict_ranking(model, tok, ex, torch):
     prompt = build_prompt(ex["ctx"], ex["vowels"], ex["cands"])
     prompt_ids = tok(prompt, return_tensors="pt").to(model.device)["input_ids"]
-    best_i, best_s = 1, float("-inf")
+    scored = []
     for i in range(1, len(ex["cands"]) + 1):
         s = score_candidate(model, tok, prompt_ids, str(i), torch)
-        if s > best_s:
-            best_s, best_i = s, i
-    return best_i
+        scored.append((i, s))
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return [i for (i, _) in scored]
 
 
 def main():
@@ -110,13 +112,19 @@ def main():
 
     total = 0
     freq_correct = 0            # 頻度1位ベースラインの正解数
+    freq_top3 = 0               # 追加: 頻度上位3に正解が入る数
     lora_correct = 0            # 追加: LoRA 推論の正解数
+    lora_top3 = 0               # 追加: LoRA 上位3に正解が入る数
     vis_rows = []               # 追加: --vis 表示用の推論結果
     # 同じ母音列で正解語が何種類に割れているか
     vowel_golds = defaultdict(set)
 
+    # 追加: 進捗バー用。処理予定の総件数(上限ありならその値、なければ全件)
+    plan_total = args.max_records if args.max_records > 0 else eval_total
+
     with gzip.open(args.eval_path, "rt", encoding="utf-8") as f:
-        for line in f:
+        # 変更: tqdm で推論進捗を表示(total=処理予定件数)
+        for line in tqdm(f, total=plan_total, desc="infer" if model is not None else "scan"):
             line = line.strip()
             if not line:
                 continue
@@ -127,21 +135,27 @@ def main():
             gold = cands[ans_idx - 1]
 
             r = rank.get(vowels, {})
-            # 候補の中で「母音列頻度が最も高い(順位が最小)」語 = 文脈無視ベースラインの選択
-            best = min(cands, key=lambda w: r.get(w, 10**9))
+            # 候補を母音列頻度の高い順(順位が小さい順)に並べる = 文脈無視ベースラインのランキング
+            freq_rank = sorted(cands, key=lambda w: r.get(w, 10**9))
+            best = freq_rank[0]  # 頻度1位
 
             total += 1
             if best == gold:
                 freq_correct += 1
+            if gold in freq_rank[:3]:  # 追加: 頻度 top3
+                freq_top3 += 1
 
-            # 追加: LoRA 推論(指定時のみ)。同じサンプルで予測番号が正解番号と一致するか
+            # 追加: LoRA 推論(指定時のみ)。スコア降順ランキングで top1/top3 を判定
             if model is not None:
-                pred_idx = predict_index(model, tok, ex, torch)
-                if pred_idx == ans_idx:
+                ranking = predict_ranking(model, tok, ex, torch)  # 1-based 候補番号の降順
+                if ranking[0] == ans_idx:
                     lora_correct += 1
+                if ans_idx in ranking[:3]:  # 追加: LoRA top3
+                    lora_top3 += 1
                 # 追加: --vis 用に推論したサンプルを記録(上限 vis_n まで)
                 if args.vis and len(vis_rows) < args.vis_n:
-                    vis_rows.append((ex, gold, best, cands[pred_idx - 1]))
+                    pred_top3 = [cands[i - 1] for i in ranking[:3]]  # 予測 top3 の単語
+                    vis_rows.append((ex, gold, best, pred_top3))
 
             vowel_golds[vowels].add(gold)
 
@@ -153,23 +167,26 @@ def main():
     print(f"eval total (全件)     : {eval_total}")  # 追加: eval データ全体の件数
     print(f"used records (集計対象): {total}  ({total/eval_total*100:.2f}% of 全件)")  # 追加: 集計に使った件数と全体比
     print(f"freq-top1 baseline acc: {freq_correct/total*100:.2f}%  ({freq_correct}/{total})")
+    print(f"freq-top3 baseline acc: {freq_top3/total*100:.2f}%  ({freq_top3}/{total})")  # 追加: 頻度 top3
     print(f"  -> この数字が高いほど『文脈を見なくても頻度だけで当たる』甘い評価データ")
-    # 追加: LoRA 推論の正解率と、頻度ベースラインとの差分(文脈を使えてるかの指標)
+    # 追加: LoRA 推論の正解率(top1/top3)と、頻度ベースラインとの差分(文脈を使えてるかの指標)
     if model is not None:
-        print(f"LoRA infer acc        : {lora_correct/total*100:.2f}%  ({lora_correct}/{total})")
-        print(f"  -> diff (LoRA - top1) : {(lora_correct-freq_correct)/total*100:+.2f}pt  (プラスなら文脈を活用できている)")
+        print(f"LoRA infer top1 acc   : {lora_correct/total*100:.2f}%  ({lora_correct}/{total})")
+        print(f"LoRA infer top3 acc   : {lora_top3/total*100:.2f}%  ({lora_top3}/{total})")  # 追加: LoRA top3
+        print(f"  -> diff top1 (LoRA-freq): {(lora_correct-freq_correct)/total*100:+.2f}pt")
+        print(f"  -> diff top3 (LoRA-freq): {(lora_top3-freq_top3)/total*100:+.2f}pt  (プラスなら文脈を活用できている)")
     # 同じ母音列で正解が2種類以上に割れている割合(文脈依存度の目安)
     split = sum(1 for v, gs in vowel_golds.items() if len(gs) >= 2)
     print(f"vowel patterns        : {len(vowel_golds)}  (うち正解が2種類以上に割れ: {split})")
     print("=" * 60)
 
-    # 追加: --vis 指定時、推論した各サンプルを表示(正解/頻度1位/モデル予測 と ○×)
+    # 追加: --vis 指定時、推論した各サンプルを表示(正解/頻度1位/モデル予測top3 と ○×)
     if args.vis and vis_rows:
         print(f"\n--- 推論結果 {len(vis_rows)} 件 ---")
-        for k, (ex, gold, best, pred) in enumerate(vis_rows, 1):
-            mark = "○" if pred == gold else "×"
+        for k, (ex, gold, best, pred_top3) in enumerate(vis_rows, 1):
+            mark = "○" if gold in pred_top3 else "×"  # top3 に正解が入っていれば○
             print(f"[{k}] CTX={ex['ctx']!r}  VOWELS=[{ex['vowels']}]")
-            print(f"     正解={gold!r}  / 頻度1位={best!r}  / モデル予測={pred!r}  -> {mark}")
+            print(f"     正解={gold!r}  / 頻度1位={best!r}  / モデル予測top3={pred_top3}  -> {mark}")
 
 
 if __name__ == "__main__":

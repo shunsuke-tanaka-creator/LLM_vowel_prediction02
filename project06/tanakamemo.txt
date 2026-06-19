@@ -1,0 +1,57 @@
+# project06 コマンドメモ
+
+source /home/shunsuke/Desktop/venv/pytorch_gpu/bin/activate
+
+## データ生成(本番)
+python make_vowel_dataset.py --cc100_rows 1000000 --subs_rows 1000000
+
+## データ生成(スモーク)
+python make_vowel_dataset.py --cc100_rows 2000 --subs_rows 2000 \
+  --out_train ../dataset/project06/train_smoke.jsonl.gz \
+  --out_eval ../dataset/project06/eval_smoke.jsonl.gz
+
+## 学習(本番)
+python -u train_vowel_lora.py \
+  --train_path ../dataset/project06/train.jsonl.gz \
+  --eval_path ../dataset/project06/eval.jsonl.gz \
+  --max_train_records 2000000 --epochs 2 --batch 8 --grad_accum 4
+
+## 学習(スモーク)
+python -u train_vowel_lora.py \
+  --train_path ../dataset/project06/train_smoke.jsonl.gz \
+  --eval_path ../dataset/project06/eval_smoke.jsonl.gz \
+  --max_train_records 2000 --max_eval_records 100 --epochs 1 --batch 4 --grad_accum 2
+
+## 推論(CLI)
+python infer.py --lora_dir logs/train_YYYYMMDD_HHMMSS --vowels "o o a e n i a a u a a"
+python infer.py --lora_dir logs/train_YYYYMMDD_HHMMSS --vowels "i a a a a e i a u" --ctx "今日は天気が悪かった"
+
+## 評価
+python eval_restore.py --lora_dir logs/train_YYYYMMDD_HHMMSS --max_records 500 --vis
+
+## API
+LORA_DIR=logs/train_YYYYMMDD_HHMMSS uvicorn serve_api:app --host 0.0.0.0 --port 8000
+curl -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" \
+  -d '{"vowels":"o o a e n i a a u a a","ctx":"","k":8}'
+
+
+
+
+
+LORA_DIR=logs/train_20260611_134432 uvicorn serve_api:app --host 0.0.0.0 --port 8000
+
+
+
+ python -u train_rerank_lora.py --train_path ../dataset/project02_2/train_k03.jsonl.gz --eval_path ../dataset/project02_2/eval_k03.jsonl.gz --out_dir lora_out_minicpm4_k03 --max_train_records 500000 --max_eval_records 10000 --epochs 1 --batch 12 --grad_accum 4 --max_seq_len 320 --no_grad_ckpt
+
+
+ gui評価
+ http://100.87.35.125:8001/
+
+ STUDY_NO_MODEL=1 PORT=8001 python study_app.py
+
+ python study_app.py
+
+
+t_init_ms（入力開始までの時間）
+t_total_ms（入力全体の時間）

@@ -113,3 +113,8 @@ python eval_freq_baseline.py \
   --max_records 2000 \
   --vis \
   --vis_n 50
+
+  python eval_freq_baseline.py \
+  --lora_dir project02/lora_out_minicpm4 \
+  --max_records 2000 \
+  --vis

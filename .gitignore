@@ -8,6 +8,21 @@ lora_smoke_out/
 *.safetensors
 *.bin
 
+# 追加: 学習チェックポイント / モデル重み (大容量、GitHub 100MB制限超過)
+*.pt
+*.pth
+*.ckpt
+*.gz
+optimizer.pt
+scheduler.pt
+checkpoint-*/
+
+# 追加: 学習ログ出力ディレクトリ (大容量)
+logs/
+
+# 追加: バックアップディレクトリ (project06 の二重追跡を防ぐ)
+bu/
+
 # CC100 から再生成する語彙/候補生成物 (大容量)
 project02_2/vocab_freq.jsonl
 project02_2/vowel2cands.json
