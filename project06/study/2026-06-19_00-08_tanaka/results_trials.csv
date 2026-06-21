@@ -1,0 +1,2 @@
+timestamp,name,mode,level,sentence_id,gold,typed,typed_vowels,gold_vowels,vowel_cer,t_init_ms,t_total_ms,keystrokes,backspaces,mean_iki_ms,selected_rank,success
+2026-06-20T03:00:05,tanaka,ime_hira,1,L1-01,おはよう,でんわ,,o a o u,,461.0,3078.0,8,1,251.7,-1,0

@@ -1,0 +1,2 @@
+timestamp,name,mode,level,sentence_id,gold,typed,typed_vowels,gold_vowels,vowel_cer,t_init_ms,t_total_ms,keystrokes,backspaces,mean_iki_ms,selected_rank,success
+2026-06-19T20:20:04,tanakatestu,vowel,1,L1-01,おはよう,おはよう,o a o u,o a o u,0.0,49.2,13780.9,8,1,311.4,1,1

@@ -20,12 +20,11 @@
 \end{equation}
 実装では，漢字を含む任意文を pykakasi により読み（ひらがな）へ変換し，
 各かなを 1 母音記号へ写像して空白区切りで出力する．
-コードから確認した写像規則は表\ref{tab:vowelrule}の通りである
-（いずれも実装 \texttt{vowel\_utils.py} で検証済み）．
+コードから確認した写像規則は表\ref{tab:vowelrule}の通りである．
 
 \begin{table}[t]
   \centering\small
-  \caption{母音化規則（実装から確認）}
+  \caption{母音化規則}
   \label{tab:vowelrule}
   \begin{tabular}{ll}
     \toprule
@@ -64,7 +63,7 @@
 任意で直前の文を文脈 $c$ として与えられ，その場合は $P_\theta(y\mid \bm{v}, c)$ を用いる．
 
 \subsection{LoRA による追加学習}
-候補生成器は事前学習済み LLM を LoRA\cite{hu2022lora} で追加学習して得る．
+候補生成器は事前学習済み LLM を LoRA で追加学習して得る．
 事前学習済み重みを $W$，学習対象の低ランク行列を $A, B$，rank を $r$，スケーリング係数を $\alpha$ とすると，
 \begin{equation}
   W' = W + \Delta W = W + BA

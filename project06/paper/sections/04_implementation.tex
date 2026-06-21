@@ -2,16 +2,16 @@
 
 \subsection{データセット}
 学習データは CC-100 日本語版と字幕コーパス（OpenSubtitles 日本語，JESC）を
-同程度の件数で交互に混合して構築する（\texttt{make\_vowel\_dataset.py}）．
+同程度の件数で交互に混合して構築する．
 原文を「。！？」で文に分割し，空白を詰めたうえで，
 日本語を含み長さ 2--40 字の文のみを残す．
-各文を母音化し，$\{$\texttt{vowels}, \texttt{ctx}, \texttt{sentence}$\}$ の 3 項組を生成する．
-文脈 \texttt{ctx} には同一原文内の直前の文を入れるが，
-既定で割合 0.5 で \texttt{<NONE>} に落とし，母音列のみでも候補生成できるよう学習する．
-学習に用いたデータの実件数は train 660{,}007 件，eval 1{,}309 件であった（コードから確認）．
+各文を母音化し，母音列・文脈・正解文の 3 項組を生成する．
+文脈には同一原文内の直前の文を入れるが，
+既定で割合 0.5 で文脈なしに落とし，母音列のみでも候補生成できるよう学習する．
+学習に用いたデータの実件数は train 660{,}007 件，eval 1{,}309 件であった．
 
 \subsection{プロンプトと損失設計}
-学習・推論・API で完全一致するプロンプトを用いる（\texttt{train\_vowel\_lora.py}）．
+学習・推論・API で完全一致するプロンプトを用いる．
 \begin{quote}\footnotesize
 \texttt{あなたは日本語IMEの文復元器です。}\\
 \texttt{母音列(a/i/u/e/o/n)から元の文を復元してください。}\\
@@ -19,26 +19,26 @@
 \texttt{VOWELS: \{vowels\}}\\
 \texttt{SENTENCE:}
 \end{quote}
-\texttt{SENTENCE:} 以降を生成対象とし，プロンプト部は \texttt{label=-100} でマスクして
+\texttt{SENTENCE:} 以降を生成対象とし，プロンプト部は損失計算から除外して
 文＋EOS のみに損失を与える．
 
 \subsection{モデルとハイパーパラメータ}
 ベースモデルは MiniCPM4-0.5B（revision \texttt{2aaa97c53d} を pin）であり，
 bfloat16 で読み込む．LoRA の対象は注意機構と MLP の全線形層
 （\texttt{q/k/v/o\_proj}，\texttt{gate/up/down\_proj}）である．
-adapter 設定ファイルから確認した値を表\ref{tab:setup}に示す．
-実際に完了した学習は \texttt{logs/train\_20260611\_134432} のログから，
-\texttt{max\_train\_records=2{,}000{,}000}（実データ上限により 660{,}007 件），
+主な設定値を表\ref{tab:setup}に示す．
+実際に完了した学習は，
+学習データ上限 2{,}000{,}000 件（実データ上限により 660{,}007 件），
 epoch 2，バッチ 8，勾配累積 4（実効バッチ 32），最大系列長 128，
-学習率 $1\times10^{-4}$，optimizer は \texttt{adamw\_torch} であった．
-ログより学習は約 10 時間 13 分，41{,}250 ステップで完了している．
+学習率 $1\times10^{-4}$，optimizer は AdamW であった．
+学習は 41{,}250 ステップで完了している．
 学習・評価損失はともに約 1.2 付近まで低下した（図\ref{fig:flow} 右）．
-trainable パラメータ数および学習に用いた GPU 名は
-ログに明示が無く \texttt{[要確認]} とする．
+実験環境は GPU が NVIDIA GeForce RTX 5060 Ti，OS は Ubuntu 24.04.4 LTS，
+PyTorch 2.12.0 である．
 
 \begin{table}[t]
   \centering\small
-  \caption{実験設定（コード・ログから確認した値）}
+  \caption{実験設定}
   \label{tab:setup}
   \begin{tabular}{ll}
     \toprule
@@ -58,11 +58,10 @@ trainable パラメータ数および学習に用いた GPU 名は
     LoRA dropout & 0.05 \\
     target modules & q,k,v,o,gate,up,down\_proj \\
     learning rate & $1\times10^{-4}$ \\
-    optimizer & adamw\_torch \\
-    trainable params & [要確認] \\
-    GPU & [要確認] \\
-    training time & 約 10h13m（ログ）\\
-    output dir & logs/train\_20260611\_134432 \\
+    optimizer & AdamW \\
+    GPU & NVIDIA GeForce RTX 5060 Ti \\
+    OS & Ubuntu 24.04.4 LTS \\
+    PyTorch & 2.12.0 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -70,17 +69,24 @@ trainable パラメータ数および学習に用いた GPU 名は
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.95\columnwidth]{figures/fig_flow.png}
-  \caption{母音入力から候補提示までの処理フロー（左）と学習曲線（右，実ログ \texttt{curve.png} より）．}
+  \caption{母音入力から候補提示までの処理フロー（左）と学習曲線（右）．}
   \label{fig:flow}
 \end{figure}
 
-なお，本研究グループの別系統として，候補集合からの順位選択型
-（reranker，候補番号を出力する multi-choice 形式）の実装も存在する
-（\texttt{train\_rerank\_lora.py}，\texttt{max\_seq\_len=320}，batch 12，grad accum 4，
-gradient checkpointing 無効）．
-本稿の評価対象は生成型（\texttt{train\_vowel\_lora.py}）であり，
-reranker 系の結果は本稿では扱わない．
-
 \subsection{推論・配信}
-推論はビーム幅 8・最大新規トークン 64 で行い，重複除去した上位 $k$ 件を返す
-（\texttt{infer.py}）．HTTP API（\texttt{serve\_api.py}）も同一プロンプトで実装されている．
+推論はビーム幅 8・最大新規トークン 64 で行い，重複除去した上位 $k$ 件を返す．
+HTTP API も同一プロンプトで実装されている．
+
+\subsection{母音キーボードの実装}
+提案手法に基づき，スマートフォン上で動作する母音キーボードを試作した
+（図\ref{fig:keyboard}）．キーは 5 母音（\texttt{a, i, u, e, o}）と撥音（\texttt{n}）
+を中心とした最小限の構成であり，各キーを大きく配置している。
+キー数を絞ったことで画面においてキーボードが占める割合は小さく，
+表示領域を広く確保できる。
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[height=0.42\textheight]{figures/fig_keyboard.png}
+  \caption{試作した母音キーボードの画面例．5 母音と撥音を中心とした少数キー構成により，各キーを大きく配置している．}
+  \label{fig:keyboard}
+\end{figure}

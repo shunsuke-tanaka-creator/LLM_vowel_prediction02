@@ -26,8 +26,12 @@ python -u train_vowel_lora.py \
 python infer.py --lora_dir logs/train_YYYYMMDD_HHMMSS --vowels "o o a e n i a a u a a"
 python infer.py --lora_dir logs/train_YYYYMMDD_HHMMSS --vowels "i a a a a e i a u" --ctx "今日は天気が悪かった"
 
-## 評価
-python eval_restore.py --lora_dir logs/train_YYYYMMDD_HHMMSS --max_records 500 --vis
+## 評価 (Acc@k / KSPC)
+python paper/scripts/dump_predictions.py --lora_dir logs/train_YYYYMMDD_HHMMSS \
+  --eval_path ../dataset/project06/eval.jsonl.gz --max_records 500 --k 8 \
+  --out paper/results/preds_proposed.jsonl
+python paper/scripts/evaluate_for_paper.py --pred_path paper/results/preds_proposed.jsonl \
+  --out_dir paper/results --tag proposed
 
 ## API
 LORA_DIR=logs/train_YYYYMMDD_HHMMSS uvicorn serve_api:app --host 0.0.0.0 --port 8000
@@ -55,3 +59,24 @@ LORA_DIR=logs/train_20260611_134432 uvicorn serve_api:app --host 0.0.0.0 --port 
 
 t_init_ms（入力開始までの時間）
 t_total_ms（入力全体の時間）
+
+
+python -u paper/scripts/dump_predictions.py \
+  --lora_dir logs/train_20260611_134432 \
+  --eval_path ../dataset/project06/eval.jsonl.gz \
+  --max_records 0 --k 8 --use_ctx \
+  --out paper/results/preds_proposed_ctx.jsonl
+
+
+--use_ctxでctxのありなしで評価するのを選択することができる。
+
+  python paper/scripts/dump_predictions.py --lora_dir logs/train_20260611_134432 \
+  --eval_path ../dataset/project06/eval.jsonl.gz --max_records 500 --k 8 \
+  --out paper/results/preds_proposed.jsonl
+
+  
+# ② Acc@K と 4方式KSPC を算出(CPU)
+python paper/scripts/evaluate_for_paper.py --pred_path paper/results/preds_proposed_ctx.jsonl \
+  --out_dir paper/results --tag proposed
+
+

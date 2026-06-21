@@ -1,9 +1,6 @@
-Method,Keys,KSPC,Reduction,ScreenOccupancy,HumanStudyRequired
-proposed_vowel_lora,5(+n),XXX,XXX,XXX,yes
-base_llm_no_lora,5(+n),XXX,-,XXX,yes(todo)
-japanese_ime,device-dependent,XXX,baseline,XXX,yes
-flick,~12,XXX,XXX,XXX,yes
-romaji_qwerty,>=26,XXX,XXX,XXX,yes
-kana,~50,XXX,XXX,XXX,yes
-freq_baseline,-,-,-,-,todo
-random,-,-,-,-,todo
+Method,Keys,KSPC,HumanStudyRequired
+proposed_vowel_lora,5(+n),XXX,yes
+romaji_kunrei,QWERTY,XXX,yes
+kana_jis,~50,XXX,yes
+flick,~12,XXX,yes
+toggle,~12,XXX,yes

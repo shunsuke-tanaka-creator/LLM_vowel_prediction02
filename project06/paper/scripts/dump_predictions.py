@@ -2,7 +2,7 @@
 """project06 の LoRA モデルで eval データを推論し、論文評価用 JSONL を出力する。
 
 出力 1行: {"input_vowels", "gold", "candidates", "scores"(null)}
-これを evaluate_for_paper.py に渡すと Acc@k / MRR / EM / CER / WER / KSPC が計算できる。
+これを evaluate_for_paper.py に渡すと Acc@k / KSPC が計算できる。
 
 project06 ルート(infer.py がある場所)から実行すること:
   source /home/shunsuke/Desktop/venv/pytorch_gpu/bin/activate

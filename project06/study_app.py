@@ -200,7 +200,8 @@ def _char_cer(hyp: str, ref: str) -> float:
 @app.post("/api/trial")
 def api_trial(req: TrialReq):
     gold_vowels = text_to_vowel_str(req.gold)
-    vowel_cer = _char_cer(req.typed_vowels, gold_vowels) if req.mode == "vowel" else ""
+    # 母音化CER: 被験者が母音列を打つモード(vowel / vowel_noinfer)で算出。追加: vowel_noinfer も対象に。
+    vowel_cer = _char_cer(req.typed_vowels, gold_vowels) if req.mode in ("vowel", "vowel_noinfer") else ""
     row = {
         "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
         "name": req.name, "mode": req.mode, "level": req.level,
@@ -230,33 +231,35 @@ class SurveyReq(BaseModel):
     session: str = ""       # 追加: 測定セッション識別子
 
 
-# 母音7項目 / IME3項目の質問文(論文・集計と対応)
+# 母音アンケート(母音1種類に統一)。2コンセプトに分けて構成。
+# A: 母音変換のストレス(入力負荷) / B: 予測変換の正確さ(システム性能の主観評価)
+# 回答はすべて 1(全くそう思わない)〜7(非常にそう思う)の7段階。
 VOWEL_QUESTIONS = {
-    "q1_vowel_convert": "提示された文章を母音列に変換するのは難しかった",
-    "q2_memory": "母音列を覚えながら入力するのは難しかった",
-    "q3_operation": "入力操作そのものは難しかった",
-    "q4_frustration": "入力中に混乱やストレスを感じた",
-    "q5_fatigue": "入力後に疲れを感じた",
-    "q6_usefulness": "通常の日本語入力より効率的だと感じた",
-    "q7_intention": "日常的に利用したいと思った",
-}
-IME_QUESTIONS = {
-    "q3_operation": "入力操作そのものは難しかった",
-    "q4_frustration": "入力中に混乱やストレスを感じた",
-    "q5_fatigue": "入力後に疲れを感じた",
+    # A. 母音変換のストレス
+    "q1_convert_load": "提示された文を母音列に変換するのは難しかった",
+    "q2_memory_load": "母音列を覚えながら入力するのは負担だった",
+    "q3_operation": "母音を打ち込む操作そのものは難しかった",
+    "q4_frustration": "母音入力中に混乱やストレスを感じた",
+    "q5_fatigue": "母音入力の後に疲れを感じた",
+    # B. 予測変換の正確さ
+    "q6_candidate_hit": "入力したかった文が候補の中に出てきた",
+    "q7_candidate_top": "入力したかった文が候補の上位に出てきた",
+    "q8_candidate_trust": "表示される変換候補は信頼できると感じた",
+    # C. 総合評価
+    "q9_usefulness": "通常の日本語入力より効率的だと感じた",
+    "q10_intention": "日常的に利用したいと思った",
 }
 
 
 @app.post("/api/survey")
 def api_survey(req: SurveyReq):
-    keys = list((VOWEL_QUESTIONS if req.mode == "vowel" else IME_QUESTIONS).keys())
+    keys = list(VOWEL_QUESTIONS.keys())  # 変更: アンケートは母音1種類に統一
     fields = ["timestamp", "name", "mode"] + keys
     row = {"timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
            "name": req.name, "mode": req.mode}
     for k in keys:
         row[k] = req.answers.get(k, "")
     with _write_lock:
-        # mode ごとに列が違うので被験者フォルダ内で mode 別ファイルに分ける
         path = os.path.join(subject_dir(req.name, req.session), f"results_survey_{req.mode}.csv")
         new = not os.path.exists(path)
         with open(path, "a", encoding="utf-8", newline="") as f:
@@ -269,33 +272,35 @@ def api_survey(req: SurveyReq):
 
 @app.get("/api/questions")
 def api_questions():
-    return {"vowel": VOWEL_QUESTIONS, "ime": IME_QUESTIONS}
+    return {"vowel": VOWEL_QUESTIONS}  # 変更: 母音アンケートのみ
 
 
-# ---- 解析(標準IME vs 母音(推論なし) の t_total_ms 平均比較) ----
+# ---- 解析(3,4 をもとに: ime(標準IME/推論あり) と vowel_noinfer(母音/推論なし) の平均を返す) ----
 @app.get("/api/analyze")
 def api_analyze(name: str, session: str = ""):
-    """被験者の results_trials.csv から ime と vowel_noinfer の success=1 の t_total_ms 平均を返す。"""
+    """被験者の results_trials.csv から、ime と vowel_noinfer の success=1 試行について各指標の平均を返す。
+    変更: 解析対象を表の 3(ime) と 4 系の vowel_noinfer の2モードに限定。"""
     path = os.path.join(subject_dir(name, session), "results_trials.csv")
-    metrics = ["t_total_ms", "t_init_ms", "mean_iki_ms"]  # 追加: t_init_ms, mean_iki_ms も集計
-    sums = {m: {"ime": 0.0, "vowel_noinfer": 0.0} for m in metrics}
-    counts = {"ime": 0, "vowel_noinfer": 0}
+    modes = ["ime", "vowel_noinfer"]
+    metrics = ["t_total_ms", "t_init_ms", "mean_iki_ms", "backspaces", "vowel_cer"]  # 追加: backspaces, vowel_cer も集計
+    sums = {m: {md: 0.0 for md in modes} for m in metrics}
+    counts = {md: 0 for md in modes}
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
             for r in csv.DictReader(f):
                 if r["mode"] in counts and r["success"] == "1":
                     for m in metrics:
-                        sums[m][r["mode"]] += float(r[m])
+                        v = r.get(m, "")
+                        sums[m][r["mode"]] += float(v) if v not in ("", None) else 0.0
                     counts[r["mode"]] += 1
 
-    def mean(m, mode):
-        return sums[m][mode] / counts[mode] if counts[mode] else 0.0
+    def mean(m, md):
+        return sums[m][md] / counts[md] if counts[md] else 0.0
 
     return {
-        "ime_n": counts["ime"], "vowel_n": counts["vowel_noinfer"],
-        "ime_mean": mean("t_total_ms", "ime"), "vowel_mean": mean("t_total_ms", "vowel_noinfer"),
-        "ime_init_mean": mean("t_init_ms", "ime"), "vowel_init_mean": mean("t_init_ms", "vowel_noinfer"),
-        "ime_iki_mean": mean("mean_iki_ms", "ime"), "vowel_iki_mean": mean("mean_iki_ms", "vowel_noinfer"),
+        "modes": modes,
+        "n": {md: counts[md] for md in modes},
+        **{m: {md: mean(m, md) for md in modes} for m in metrics},
     }
 
 

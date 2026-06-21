@@ -1,5 +1,2 @@
-Method,Acc@1,Acc@3,Acc@5,MRR,CER,WER,EM
-proposed_vowel_lora,XXX,XXX,XXX,XXX,XXX,XXX,XXX
-base_llm_no_lora,XXX,XXX,XXX,XXX,XXX,XXX,XXX
-freq_baseline,XXX,XXX,XXX,XXX,XXX,XXX,XXX
-random,XXX,XXX,XXX,XXX,XXX,XXX,XXX
+Method,Acc@1,Acc@3,Acc@5
+proposed_vowel_lora,XXX,XXX,XXX

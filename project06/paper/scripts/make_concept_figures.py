@@ -10,6 +10,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
 
+# 追加: 図中の文字を Times New Roman にする
+plt.rcParams["font.family"] = "serif"
+plt.rcParams["font.serif"] = ["Times New Roman", "Liberation Serif", "DejaVu Serif"]
+plt.rcParams["mathtext.fontset"] = "stix"
+plt.rcParams["axes.unicode_minus"] = False  # 追加
+
 FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 os.makedirs(FIG_DIR, exist_ok=True)
 
@@ -57,13 +63,13 @@ def flow():
         y -= 1.5
     ax.set_title("Processing flow", fontsize=9)
 
-    # 右: 学習曲線は実ログ curve.png を使う旨のプレースホルダ
+    # 右: 学習曲線は実ログ curve.png を使う旨のプレースホルダ(黄色=未確定)
     ax2 = axes[1]
     ax2.axis("off")
     ax2.text(0.5, 0.5,
-             "Training curve:\nuse real log\nlogs/train_*/curve.png\n(loss -> ~1.2)",
+             "Training curve\n(TBD: insert real\nloss curve, loss -> ~1.2)",
              ha="center", va="center", fontsize=9,
-             bbox=dict(boxstyle="round", fc="#f3f3f3", ec="#888"))
+             bbox=dict(boxstyle="round", fc="#ffff66", ec="#888"))
     fig.savefig(os.path.join(FIG_DIR, "fig_flow.png"), dpi=150, bbox_inches="tight")
     plt.close(fig)
     print("saved fig_flow.png")

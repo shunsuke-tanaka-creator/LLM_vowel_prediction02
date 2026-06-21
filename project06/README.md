@@ -48,8 +48,8 @@ project06/
 ├── make_vowel_dataset.py       # CC100+字幕 → ../dataset/project06/{train,eval}.jsonl.gz を生成
 ├── train_vowel_lora.py         # 文復元SFT 学習 (sentence部のみ loss マスク)
 ├── infer.py                    # CLI 推論
-├── eval_restore.py             # 完全一致率(top1/topk)+文字精度の評価
-└── serve_api.py                # HTTP 推論 (POST /predict)
+├── serve_api.py                # HTTP 推論 (POST /predict)
+└── paper/scripts/              # 論文用評価 (dump_predictions.py → evaluate_for_paper.py: Acc@k / KSPC)
 ```
 
 ## セットアップ
@@ -88,10 +88,14 @@ python infer.py --lora_dir logs/train_YYYYMMDD_HHMMSS --vowels "o o a e n i a a 
 python infer.py --lora_dir logs/train_YYYYMMDD_HHMMSS --vowels "i a a a a e i a u" --ctx "今日は天気が悪かった"
 ```
 
-### 評価
+### 評価 (Acc@k / KSPC)
 
 ```bash
-python eval_restore.py --lora_dir logs/train_YYYYMMDD_HHMMSS --max_records 500 --vis
+python paper/scripts/dump_predictions.py --lora_dir logs/train_YYYYMMDD_HHMMSS \
+  --eval_path ../dataset/project06/eval.jsonl.gz --max_records 500 --k 8 \
+  --out paper/results/preds_proposed.jsonl
+python paper/scripts/evaluate_for_paper.py --pred_path paper/results/preds_proposed.jsonl \
+  --out_dir paper/results --tag proposed
 ```
 
 ### 推論 (HTTP API)
@@ -106,9 +110,17 @@ curl -X POST http://127.0.0.1:8000/predict \
 ### 実ユーザ実験 (認知負荷評価) 計測アプリ
 
 スマホ/PC のブラウザから LAN 経由で使う計測 Web アプリ。
-名前入力・4モード(IME L1-3 / 母音 L1-3) + 2アンケート(IME 3項目 / 母音 7項目)で、
-課題文を一定時間表示→隠す→入力させ、入力時間・打鍵数・Backspace数・打鍵間隔・
-母音化誤り率(母音化CER)・正答率を `study/results_*.csv` に保存する。
+コンセプトは「母音に変換するストレス」と「予測変換が正確に機能するか」を切り分けて測ること。
+2軸(IME / 母音)×2(推論なし / あり)の4モードで課題を行う。
+
+| | 推論なし | 推論あり |
+| --- | --- | --- |
+| IME | 1. IMEひらがな(全てひらがな入力。電話→でんわ) | 3. 標準IME(漢字変換あり) |
+| 母音 | 2. 母音入力(母音列を打つ。電話→e n a) | 4. 母音(推論こみ / 推論はせず) |
+
+課題文を一定時間(3秒)表示→隠す→入力させ、入力時間・打鍵数・Backspace数・打鍵間隔・
+母音化誤り率(母音化CER。モード2/4で算出)・正答率を `study/<セッション>_<名前>/results_trials.csv` に保存する。
+アンケートは母音7項目 / IME3項目を `results_survey_{vowel,ime}.csv` に保存する。
 
 ```bash
 # 1) 課題文セット(Level1=単語 / Level2=短文 / Level3=一般文)を生成

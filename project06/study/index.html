@@ -53,10 +53,10 @@
     <input id="name" type="text" placeholder="例: tanaka01" autocomplete="off">
     <div style="height:12px"></div>
     <label>モードを選択</label>
-    <button class="btn" onclick="startTask('ime')">標準IME</button>
+    <button class="btn" onclick="startTask('ime_hira')">IMEひらがな(推論なし)</button>
+    <button class="btn sub" onclick="startTask('vowel_noinfer')">母音入力(推論なし)</button>
+    <button class="btn" onclick="startTask('ime')">標準IME(推論あり)</button>
     <button class="btn sub" onclick="startTask('vowel')">母音(推論こみ)</button>
-    <button class="btn sub" onclick="startTask('vowel_noinfer')">母音(推論はせず)</button>
-    <button class="btn ok" onclick="startSurvey('ime')">アンケート標準</button>
     <button class="btn ok" onclick="startSurvey('vowel')">アンケート母音</button>
     <button class="btn sub" onclick="runAnalyze()">解析</button>
     <div id="analyzeResult" class="muted" style="margin-top:10px; white-space:pre-line"></div>
@@ -151,6 +151,7 @@ function showNext(){
   const s = state.sentences[state.idx];
   state.cur = s;
   const modeLabel = state.mode==='ime' ? 'IME'
+    : state.mode==='ime_hira' ? 'IMEひらがな'
     : state.mode==='vowel' ? '母音(推論こみ)' : '母音(推論なし)';
   $("progress").textContent = `${modeLabel}  L${s.level}  (${state.idx+1}/${state.sentences.length})`;
   $("phaseShow").classList.remove("hidden");
@@ -186,7 +187,11 @@ function beginShow(){
   } else if(state.mode === 'vowel_noinfer'){
     $("vowelArea").classList.add("hidden");
     $("inputHint").textContent = "";  // 変更: キーワード下のうっすらした説明文を非表示
-    ans.placeholder = "ここに入力";
+    ans.placeholder = "a i u e o n ...";  // 変更: 母音列を直接入力するモードなので母音例に統一
+  } else if(state.mode === 'ime_hira'){
+    $("vowelArea").classList.add("hidden");
+    $("inputHint").textContent = "";
+    ans.placeholder = "ひらがなで入力(例: でんわ)";  // 追加: 漢字変換せず全てひらがなで入力
   } else {
     $("vowelArea").classList.add("hidden");
     $("inputHint").textContent = "";  // 変更: キーワード下のうっすらした説明文を非表示
@@ -279,14 +284,26 @@ async function submitTrial(){
     if(state.selectedRank < 0){ alert("候補を選択してください"); return; }
     typed = state.selectedText;
     typedVowels = $("answer").value.trim();
+  } else if(state.mode === 'vowel_noinfer'){
+    // 母音(推論なし): 打った母音列そのものが答え。母音化CER算出のため typed_vowels にも入れる。追加。
+    typed = $("answer").value.trim();
+    if(!typed){ alert("入力してください"); return; }
+    typedVowels = typed;
   } else {
-    // ime / vowel_noinfer: 最終的な文を入力(vowel_noinfer は iPhone拡張で変換済み)
+    // ime / ime_hira: 最終的な文を入力(ime_hira はひらがなのみ)
     typed = $("answer").value.trim();
     if(!typed){ alert("入力してください"); return; }
   }
-  // 正解判定: text または許容表記(alts, | 区切り)のいずれかと一致すれば正解。追加。
-  const accepts = [state.cur.text, ...((state.cur.alts || "").split("|").filter(Boolean))];
-  const success = accepts.includes(typed) ? 1 : 0;
+  // 正解判定: モードで分ける。追加。
+  // ime/ime_hira/vowel(候補選択) は文字列一致、vowel_noinfer は打った母音列が正解母音列と一致で正解。
+  let success;
+  if(state.mode === 'vowel_noinfer'){
+    const goldV = (state.cur.vowels || "").trim();
+    success = (typed.split(/\s+/).join(" ") === goldV) ? 1 : 0;
+  } else {
+    const accepts = [state.cur.text, ...((state.cur.alts || "").split("|").filter(Boolean))];
+    success = accepts.includes(typed) ? 1 : 0;
+  }
   await fetch(`${API}/api/trial`, {
     method:"POST", headers:{"Content-Type":"application/json"},
     body: JSON.stringify({
@@ -317,7 +334,7 @@ async function startSurvey(mode){
   const data = await r.json();
   const qs = data[mode];
   surveyState = { mode, keys:Object.keys(qs), answers:{} };
-  $("surveyHint").textContent = (mode==='vowel'?'母音入力':'通常IME') + " について 1(全くそう思わない)〜7(非常にそう思う) で回答";
+  $("surveyHint").textContent = "母音入力 について 1(全くそう思わない)〜7(非常にそう思う) で回答";  // 変更: 母音アンケートに統一
   const box = $("surveyQuestions");
   box.innerHTML = "";
   Object.entries(qs).forEach(([key, text])=>{
@@ -357,28 +374,23 @@ async function submitSurvey(){
   goHome();
 }
 
-// ========== 解析(標準IME vs 母音(推論なし) の t_total_ms 比較) ==========
+// ========== 解析(3,4 をもとに: 標準IME(推論あり) vs 母音(推論なし)) ==========
 async function runAnalyze(){
   if(!nameVal()){ alert("名前を入力してください"); return; }
   const r = await fetch(`${API}/api/analyze?name=${encodeURIComponent(nameVal())}&session=${encodeURIComponent(SESSION)}`);
   if(!r.ok){ $("analyzeResult").textContent = "解析失敗: " + (await r.text()); return; }
   const d = await r.json();
-  if(d.ime_n === 0 || d.vowel_n === 0){
-    $("analyzeResult").textContent = "標準IME・母音(推論なし)両方の課題を完了してください。";
-    return;
+  const LABEL = { ime:"標準IME(推論あり)", vowel_noinfer:"母音(推論なし)" };
+  let out = "";
+  for(const md of d.modes){
+    const n = d.n[md] || 0;
+    if(n === 0){ out += `${LABEL[md]}: 未実施\n`; continue; }
+    out += `${LABEL[md]} (n=${n})\n`
+      + `  t_total ${d.t_total_ms[md].toFixed(0)}ms / t_init ${d.t_init_ms[md].toFixed(0)}ms`
+      + ` / iki ${d.mean_iki_ms[md].toFixed(0)}ms / BS ${d.backspaces[md].toFixed(1)}`
+      + ` / 母音CER ${d.vowel_cer[md].toFixed(3)}\n`;
   }
-  const faster = d.ime_mean - d.vowel_mean;  // 正なら母音が速い
-  const pct = d.ime_mean ? (faster / d.ime_mean * 100) : 0;
-  const verdict = faster > 0
-    ? `母音(推論なし)が ${Math.abs(faster).toFixed(0)}ms (${pct.toFixed(1)}%) 速い`
-    : `母音(推論なし)が ${Math.abs(faster).toFixed(0)}ms (${Math.abs(pct).toFixed(1)}%) 遅い`;
-  $("analyzeResult").textContent =
-    `標準IME 平均 t_total: ${d.ime_mean.toFixed(0)}ms (n=${d.ime_n})\n`
-    + `母音(推論なし) 平均 t_total: ${d.vowel_mean.toFixed(0)}ms (n=${d.vowel_n})\n`
-    + verdict + `\n`
-    + `\n`
-    + `t_init 平均: 標準IME ${d.ime_init_mean.toFixed(0)}ms / 母音 ${d.vowel_init_mean.toFixed(0)}ms\n`
-    + `mean_iki 平均: 標準IME ${d.ime_iki_mean.toFixed(0)}ms / 母音 ${d.vowel_iki_mean.toFixed(0)}ms`;
+  $("analyzeResult").textContent = out;
 }
 
 // 追加: iOS Safari でキーボード表示時にページ全体が上にシフトするのを打ち消す。

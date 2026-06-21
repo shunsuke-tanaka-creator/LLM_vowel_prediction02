@@ -4,10 +4,14 @@
 \documentclass[10pt,twocolumn]{jarticle}
 
 \usepackage{amsmath,amssymb}
-\usepackage{graphicx}
+\usepackage[dvipdfmx]{graphicx}
 \usepackage{booktabs}
 \usepackage{url}
 \usepackage{bm}
+\usepackage[dvipdfmx]{color}                        % 追加: 黄色背景ハイライト用(dvipdfmxドライバ明示)
+\definecolor{tbd}{rgb}{1,1,0}                       % 追加: 未確定箇所の背景色(黄)
+\newcommand{\TBD}[1]{\colorbox{tbd}{#1}}            % 追加: 短い仮値/未確定をハイライト
+\newcommand{\TBDbox}[1]{\par\noindent\colorbox{tbd}{\parbox{\columnwidth}{#1}}\par}  % 追加: 折返しが要る長文注記用
 
 \setlength{\textwidth}{180mm}
 \setlength{\textheight}{250mm}
@@ -15,22 +19,29 @@
 \setlength{\topmargin}{-15mm}
 \setlength{\columnsep}{8mm}
 
-\title{母音列を入力とする超省入力型日本語入力システム\\
----LoRA 追加学習 LLM による候補生成と順位付け---}
-\author{著者名 \quad [要確認] \\ 所属 \quad [要確認]}
+\title{大規模言語モデルを用いた人にやさしい母音ベース省入力日本語インタフェース\\
+\large A Vowel-Based Low-Effort Japanese Text Interface Using Large Language Models}
+\author{
+○ 田中　峻介$^1$ \quad 久保田　直行$^1$\\
+○ Tanaka Shunsuke$^1$, \quad Naoyuki Kubota$^1$\\
+$^1$ 東京都立大学\\
+$^1$Tokyo Metropolitan University}
 \date{}
 
 \begin{document}
+\twocolumn[
 \maketitle
-
-% Abstract は既提出のため大きく変更しない。本文との整合のため最小限の文言で再掲する。
-\begin{abstract}
-本稿では，日本語の母音列のみを入力情報として用い，大規模言語モデル（LLM）による文脈推定を組み合わせることで，従来より少ない入力操作で実用的な文章入力を実現する日本語入力システムを提案する．
-提案手法は，子音情報を落とした 5 母音（および撥音）を中心とする曖昧な入力から，文脈に応じた日本語候補を生成し，順位付けして提示する．
-候補生成器には小型 LLM（MiniCPM4-0.5B）を LoRA により追加学習したものを用いる．
-本稿では，従来日本語 IME と比較可能な形で，候補生成精度（Acc@$k$, MRR, CER/WER），入力効率（KSPC, 入力削減率），UI 効率（キー数，画面占有率），操作負荷を評価する枠組みを示す．
-精度・効率の具体的数値は評価実験の実施後に確定する（本稿では \texttt{XXX}）．
-\end{abstract}
+% Abstract（英語）。段抜き(1列)・中央寄せ・やや幅を狭めて表示する。
+\begin{center}
+\begin{minipage}{0.85\textwidth}
+\centering
+\textbf{Abstract:} With the widespread use of mobile devices, Japanese text input interfaces play an important role in everyday information interaction. However, software keyboards require many keys to be displayed on a limited screen area. As a result, the visual and touch-sensitive area of each key becomes small, which can increase the likelihood of input errors during touch operation. This issue may be particularly burdensome for older adults, as age-related changes in motor ability can make it difficult to accurately distinguish and press small keys.
+In this study, we propose an ultra-low-input Japanese text entry method that uses only vowel information as input. Using a large language model additionally fine-tuned with LoRA, the proposed method estimates and ranks contextually appropriate candidate words from vowel sequences.
+This study aims to clarify the feasibility of a vowel-only input interface and its effectiveness as a human-friendly text input support technology.
+\end{minipage}
+\end{center}
+\vspace{1.5em}
+]
 
 \input{sections/01_intro}
 \input{sections/02_related_work}
@@ -39,8 +50,5 @@
 \input{sections/05_experiment}
 \input{sections/06_results_discussion}
 \input{sections/07_conclusion}
-
-\bibliographystyle{plain}
-\bibliography{refs}
 
 \end{document}

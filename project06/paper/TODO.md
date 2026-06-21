@@ -8,18 +8,13 @@
 
 ## 2. 実験実行が必要な評価指標（本文 XXX）
 - [ ] Acc@1 / Acc@3 / Acc@5 / Acc@10（`dump_predictions.py` → `evaluate_for_paper.py`）
-- [ ] MRR / Exact Match
-- [ ] CER / WER
-- [ ] KSPC（提案手法は母音キー数/文字数で自動算出。従来手法は実測または定義値）
-- [ ] 入力削減率（KSPC 比から算出。基準は従来IME/フリック/QWERTY/かな）
-- [ ] 候補選択回数の集計
-- [ ] エラー分析 CSV の集計（`errors_proposed.csv`）
+- [ ] KSPC（提案手法=母音／ローマ字訓令式／JISかな／フリックの理想KSPCを `evaluate_for_paper.py` が自動算出。実行して値を確定するだけ）
 
 ## 3. 未実装の比較対象（[今後比較予定]）
 - [ ] Base LLM without LoRA の評価（生成型 project06 には未実装）
 - [ ] 辞書・頻度ベース baseline（生成型には未実装。reranker系 project02_2 には形式違いで存在）
 - [ ] random ranking baseline（未実装）
-- [ ] 従来日本語IME/フリック/QWERTY/かな入力の KSPC・画面占有率の実測
+- [ ] 既存IME方式の実測KSPC（理想KSPCは算出済み。実測はユーザ実験 `study_app.py` のデータから）
 
 ## 4. 人間に操作してもらう必要がある評価
 - [ ] 入力時間 / 1文字あたり入力時間
@@ -34,7 +29,7 @@
 - [ ] hu2022lora / hart1988nasatlx / brooke1996sus / mackenzie2002kspc / soukoreff2003 の書誌最終確認
 
 ## 6. 図表の差し替え
-- [ ] fig_topk_accuracy / fig_cer_wer / fig_mrr / fig_kspc / fig_reduction / fig_screen_occupancy / fig_rank_accuracy / fig_error_types を実値で再生成
+- [ ] fig_topk_accuracy / fig_kspc を実値で再生成
 - [ ] 表 tab:acc, tab:abl, tab:input の XXX を実値に
 - [ ] 図中ラベルを日本語化する場合は日本語フォント設定を追加
 

@@ -1,0 +1,94 @@
+\begin{thebibliography}{10}
+
+\bibitem{brooke1996sus}
+John Brooke.
+\newblock {SUS}: A quick and dirty usability scale.
+\newblock In P.~W. Jordan, B.~Thomas, B.~A. Weerdmeester, and A.~L. McClelland,
+  editors, {\em Usability Evaluation in Industry}, pages 189--194. Taylor \&
+  Francis, London, 1996.
+
+\bibitem{brown2020gpt3}
+Tom~B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan, et~al.
+\newblock Language models are few-shot learners.
+\newblock In {\em Advances in Neural Information Processing Systems (NeurIPS)},
+  volume~33, 2020.
+\newblock 著者一部省略(et al.); arXiv:2005.14165.
+
+\bibitem{hart1988nasatlx}
+Sandra~G. Hart and Lowell~E. Staveland.
+\newblock Development of {NASA-TLX} (task load index): Results of empirical and
+  theoretical research.
+\newblock In P.~A. Hancock and N.~Meshkati, editors, {\em Human Mental
+  Workload}, volume~52 of {\em Advances in Psychology}, pages 139--183.
+  North-Holland, 1988.
+
+\bibitem{hu2022lora}
+Edward~J. Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean
+  Wang, Lu~Wang, and Weizhu Chen.
+\newblock {LoRA}: Low-rank adaptation of large language models.
+\newblock In {\em International Conference on Learning Representations (ICLR)},
+  2022.
+\newblock arXiv:2106.09685.
+
+\bibitem{gaze_input}
+Per~Ola Kristensson and Keith Vertanen.
+\newblock The potential of dwell-free eye-typing for fast assistive gaze
+  communication.
+\newblock In {\em Proc. Symposium on Eye Tracking Research and Applications
+  (ETRA '12)}, pages 241--244. ACM, 2012.
+
+\bibitem{jpime}
+Taku Kudo, T.~Komatsu, T.~Hanaoka, J.~Mukai, and Y.~Tabata.
+\newblock {Mozc}: A statistical kana-kanji conversion system (in japanese).
+\newblock In {\em 言語処理学会年次大会発表論文集}, pages 948--951, 2011.
+\newblock 著者フルネーム・正確な書誌 [要確認].
+
+\bibitem{mackenzie2002kspc}
+I.~Scott MacKenzie.
+\newblock {KSPC} (keystrokes per character) as a characteristic of text entry
+  techniques.
+\newblock In {\em Proc. 4th Int. Symp. on Human Computer Interaction with
+  Mobile Devices (Mobile HCI 2002)}, volume 2411 of {\em Lecture Notes in
+  Computer Science}, pages 195--210. Springer-Verlag, 2002.
+
+\bibitem{ambiguous_input}
+I.~Scott MacKenzie, Hedy Kober, Derek Smith, Terry Jones, and Eugene Skepner.
+\newblock {LetterWise}: Prefix-based disambiguation for mobile text input.
+\newblock In {\em Proc. ACM Symposium on User Interface Software and Technology
+  (UIST 2001)}, pages 111--120. ACM, 2001.
+
+\bibitem{soukoreff2003}
+R.~William Soukoreff and I.~Scott MacKenzie.
+\newblock Metrics for text entry research: An evaluation of {MSD} and {KSPC},
+  and a new unified error metric.
+\newblock In {\em Proc. ACM Conference on Human Factors in Computing Systems
+  (CHI 2003)}, pages 113--120. ACM, 2003.
+
+\bibitem{dasher}
+David~J. Ward and David J.~C. MacKay.
+\newblock Fast hands-free writing by gaze direction.
+\newblock {\em Nature}, 418(6900):838, 2002.
+\newblock arXiv:cs/0204030; DOI [要確認].
+
+\bibitem{smartwatch_input}
+[要確認: Jonggi~Hong ほか].
+\newblock A comparative evaluation of three qwerty keyboards for a smartwatch.
+\newblock {\em Interacting with Computers}, [要確認].
+\newblock 著者名・巻号・年・ページ [要確認].
+
+\bibitem{vr_input}
+[要確認: Marco~Speicher ほか].
+\newblock Selection-based text entry in virtual reality.
+\newblock In {\em Proc. 2018 CHI Conference on Human Factors in Computing
+  Systems (CHI '18)}, 2018.
+\newblock 著者名 [要確認].
+
+\bibitem{flick_input}
+[要確認].
+\newblock No-look flick: Single-handed and eyes-free japanese text input system
+  on touch screens of mobile devices.
+\newblock In {\em Proc. 15th Int. Conf. on Human-Computer Interaction with
+  Mobile Devices and Services (MobileHCI '13)}, 2013.
+\newblock 著者名 [要確認].
+
+\end{thebibliography}

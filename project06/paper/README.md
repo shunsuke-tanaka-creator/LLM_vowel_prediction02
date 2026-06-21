@@ -11,24 +11,42 @@ paper/
   sections/                # 各章 .tex
   figures/                 # 図（PNG）
   tables/                  # 表データ（CSV; 本文の表は .tex 内に直接記述）
-  results/                 # 評価結果（metrics_*.json, errors_*.csv, preds_*.jsonl）
+  results/                 # 評価結果（metrics_*.json, preds_*.jsonl）
   scripts/
     dump_predictions.py    # project06 モデルで推論し評価用 JSONL を出力
-    evaluate_for_paper.py  # Acc@k/MRR/EM/CER/WER/KSPC とエラーCSVを計算
-    plot_paper_figures.py  # 比較グラフ等を生成（実値が無ければ仮値で動作）
+    evaluate_for_paper.py  # Acc@k / KSPC(母音 vs ローマ字・かな・フリック・トグル)を計算
+    plot_paper_figures.py  # Acc@k / KSPC の比較グラフを生成（実値が無ければ仮値で動作）
     make_concept_figures.py# 概要図・処理フロー図を生成
+```
+
+## 0. platex のインストール（初回のみ / Ubuntu）
+
+`main.tex` は日本語 TeX（platex）を使う。未インストールなら以下を実行する。
+
+```bash
+# 日本語TeX一式（platex, pbibtex, dvipdfmx を含む）
+sudo apt update
+sudo apt install -y texlive-lang-japanese texlive-latex-extra
+```
+
+インストール確認（パスが3つとも表示されればOK）:
+
+```bash
+which platex pbibtex dvipdfmx
 ```
 
 ## 論文のビルド方法
 
 ```bash
 cd paper
-platex main.tex
-pbibtex main
-platex main.tex
-platex main.tex
-dvipdfmx main.dvi   # -> main.pdf
+platex main.tex     # 1回目: .dvi を作り、参照番号の下準備
+pbibtex main        # 参考文献(refs.bib)を処理
+platex main.tex     # 2回目: 引用番号を反映
+platex main.tex     # 3回目: 相互参照を確定
+dvipdfmx main.dvi   # -> main.pdf が完成
 ```
+
+各章の `sections/*.tex` は `main.tex` の `\input{...}` で自動的に1つのPDFに結合される（手で結合する必要はない）。
 （uplatex/lualatex-ja 等を使う場合は documentclass を適宜変更）
 
 ## 評価コードの実行方法
@@ -66,7 +84,7 @@ python plot_paper_figures.py       # 比較グラフ一式（results があれ�
 
 ## `XXX` を差し替える場所
 
-- 本文中の `XXX`：Acc@1/3/5, MRR, CER, WER, KSPC, 入力削減率, 入力時間, NASA-TLX, SUS, 画面占有率
+- 本文中の `XXX`：Acc@1/3/5, KSPC(母音/ローマ字/かな/フリック/トグル), 入力時間, 母音変換負荷, 記憶保持負荷, NASA-TLX, SUS
 - 表 `tab:acc`, `tab:abl`, `tab:input` の `XXX`
 - `plot_paper_figures.py` の `SAMPLE_*`（`TODO: replace with actual scores`）
 - 数値は `results/metrics_*.json` を算出後に転記する。
@@ -75,7 +93,7 @@ python plot_paper_figures.py       # 比較グラフ一式（results があれ�
 
 入力時間 / 1文字あたり入力時間 / 修正回数 / 候補選択回数 / 誤入力率 /
 タスク完了率 / NASA-TLX / SUS / 若年・高齢比較 / フリック熟練・非熟練比較 /
-画面占有率の実測 / KSPC の実測。詳細は `TODO.md`。
+KSPC の実測。詳細は `TODO.md`。
 
 ## 引用確認が必要な箇所
 
