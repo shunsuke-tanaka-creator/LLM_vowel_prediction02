@@ -33,7 +33,9 @@ from infer import predict  # noqa: E402
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--base_model", default="openbmb/MiniCPM4-0.5B")
-    ap.add_argument("--lora_dir", required=True)
+    ap.add_argument("--lora_dir", default=None)  # 追加: 任意化(--no_lora 時は不要)
+    ap.add_argument("--no_lora", action="store_true", default=False,
+                    help="追加: LoRAを適用せず素のベースモデルで評価する(LoRA有無アブレーション用)")
     ap.add_argument("--eval_path", default="../dataset/project06/eval.jsonl.gz")
     ap.add_argument("--revision", default="2aaa97c53d")
     ap.add_argument("--max_records", type=int, default=0, help="0 で全件")
@@ -52,7 +54,12 @@ def main():
         args.base_model, torch_dtype=torch.bfloat16, device_map="auto",
         trust_remote_code=True, revision=args.revision,
     )
-    model = PeftModel.from_pretrained(base, args.lora_dir)
+    if args.no_lora:  # 追加: LoRAを当てず素のベースモデルを評価
+        model = base
+    else:
+        if not args.lora_dir:
+            raise SystemExit("--lora_dir か --no_lora のどちらかを指定してください")
+        model = PeftModel.from_pretrained(base, args.lora_dir)
     model.eval()
 
     os.makedirs(os.path.dirname(args.out), exist_ok=True)

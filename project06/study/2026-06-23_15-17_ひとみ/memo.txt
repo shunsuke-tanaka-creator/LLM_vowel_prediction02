@@ -1,0 +1,5 @@
+mode	件数	平均 t_total_ms
+ime_hira	9	5249.7 ms
+vowel_noinfer	9	3565.0 ms
+ime	9	4472.1 ms
+vowel_infer	9	2832.8 ms

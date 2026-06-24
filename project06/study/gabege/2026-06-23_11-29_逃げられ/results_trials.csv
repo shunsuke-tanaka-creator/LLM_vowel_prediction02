@@ -1,0 +1,10 @@
+timestamp,name,mode,level,sentence_id,gold,typed,typed_vowels,gold_vowels,vowel_cer,t_init_ms,t_total_ms,keystrokes,backspaces,mean_iki_ms,selected_rank,success
+2026-06-23T11:34:07,逃げられ,vowel_noinfer,1,L1-01,おはよう,oaou,oaou,o a o u,0.0,4335.0,1166.0,4,0,291.0,-1,1
+2026-06-23T11:34:12,逃げられ,vowel_noinfer,1,L1-02,パソコン,aoon,aoon,a o o n,0.0,1449.0,932.0,4,0,234.3,-1,1
+2026-06-23T11:34:19,逃げられ,vowel_noinfer,1,L1-03,電話,ena,ena,e n a,0.0,1263.0,2549.0,4,1,555.2,-1,1
+2026-06-23T11:34:26,逃げられ,vowel_noinfer,2,L2-01,何を食べようか,aioaeoua,aioaeoua,a i o a e o u a,0.0,396.0,2880.0,8,0,364.6,-1,1
+2026-06-23T11:34:31,逃げられ,vowel_noinfer,2,L2-02,気をつけてね,ioueee,ioueee,i o u e e e,0.0,430.0,2248.0,6,0,383.6,-1,1
+2026-06-23T11:34:37,逃げられ,vowel_noinfer,2,L2-03,お腹がすいた,oaaauia,oaaauia,o a a a u i a,0.0,379.0,2264.0,7,0,319.8,-1,1
+2026-06-23T11:34:44,逃げられ,vowel_noinfer,3,L3-01,来週は寒くなりそうだ,aiuuaauuaioua,aiuuaauuaioua,a i u u a a u u a i o u a,0.0,446.0,3844.0,13,0,287.3,-1,1
+2026-06-23T11:34:57,逃げられ,vowel_noinfer,3,L3-02,あなたはどこにいるの,aaaaooiiuo,aaaaooiiuo,a a a a o o i i u o,0.0,703.0,8455.0,12,2,568.7,-1,1
+2026-06-23T11:35:06,逃げられ,vowel_noinfer,3,L3-03,車で行こうか、電車で行こうか,uuaeiouaenaeioua,uuaeiouaenaeioua,u u a e i o u a 、 e n a e i o u a,0.058823529411764705,418.0,6396.0,17,1,356.7,-1,1

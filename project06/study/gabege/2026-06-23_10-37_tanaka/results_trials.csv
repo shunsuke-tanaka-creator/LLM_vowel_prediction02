@@ -1,0 +1,4 @@
+timestamp,name,mode,level,sentence_id,gold,typed,typed_vowels,gold_vowels,vowel_cer,t_init_ms,t_total_ms,keystrokes,backspaces,mean_iki_ms,selected_rank,success
+2026-06-23T10:41:32,tanaka,ime_hira,1,L1-01,おはよう,おはよう,,o a o u,,306.0,1579.0,7,1,103.6,-1,1
+2026-06-23T10:41:40,tanaka,ime_hira,1,L1-02,パソコン,パソコン,,a o o n,,3370.0,1924.0,9,1,119.6,-1,0
+2026-06-23T10:41:51,tanaka,ime_hira,1,L1-02,パソコン,ぱそこん,,a o o n,,3367.0,2442.0,10,1,154.3,-1,1

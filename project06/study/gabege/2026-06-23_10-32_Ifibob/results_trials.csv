@@ -1,0 +1,11 @@
+timestamp,name,mode,level,sentence_id,gold,typed,typed_vowels,gold_vowels,vowel_cer,t_init_ms,t_total_ms,keystrokes,backspaces,mean_iki_ms,selected_rank,success
+2026-06-23T10:36:45,Ifibob,ime_hira,1,L1-01,おはよう,おはよう,,o a o u,,1532.0,951.0,4,0,211.3,-1,1
+2026-06-23T10:36:52,Ifibob,ime_hira,1,L1-02,パソコン,パソコン,,a o o n,,397.0,3045.0,8,7,155.5,-1,1
+2026-06-23T10:36:57,Ifibob,ime_hira,1,L1-03,電話,電話,,e n a,,558.0,2240.0,5,6,169.6,-1,1
+2026-06-23T10:37:04,Ifibob,ime_hira,2,L2-01,今から帰る,いまからかえる,,i a a a a e u,,938.0,2801.0,7,0,334.7,-1,1
+2026-06-23T10:39:37,Ifibob,ime_hira,1,L1-01,おはよう,おはよう,,o a o u,,584.0,962.0,4,0,182.0,-1,1
+2026-06-23T10:39:43,Ifibob,ime_hira,1,L1-02,パソコン,パソコン,,a o o n,,396.0,2364.0,7,6,147.0,-1,1
+2026-06-23T10:39:48,Ifibob,ime_hira,1,L1-03,電話,電話,,e n a,,435.0,1191.0,5,4,91.1,-1,1
+2026-06-23T10:40:05,Ifibob,ime_hira,1,L1-01,おはよう,おはよう,,o a o u,,461.0,1760.0,6,2,204.4,-1,1
+2026-06-23T10:40:10,Ifibob,ime_hira,1,L1-02,パソコン,パソコン,,a o o n,,320.0,1890.0,7,6,108.0,-1,1
+2026-06-23T10:40:17,Ifibob,ime_hira,1,L1-03,電話,電話,,e n a,,480.0,2759.0,4,4,318.9,-1,1

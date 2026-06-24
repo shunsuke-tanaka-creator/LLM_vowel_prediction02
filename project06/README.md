@@ -21,15 +21,16 @@ CC-100 と字幕(OpenSubtitles/JESC)を混ぜたコーパスを「。」で区�
 - 形式: 自由生成(SFT)。プロンプト `... VOWELS: o o a ...\nSENTENCE:` → モデルが `今日は天気が悪かった` を生成。
 - データ:
   - CC-100-ja(`range3/cc100-ja`)と字幕(`Nan-Do/OpenSubtitlesJapanese`, `nntsuzu/JESC`)を同程度の件数で交互に混合。
-  - 原文を「。」(! ? も含む)で文分割し、空白詰め・日本語含む・長さ 2〜40 字でフィルタ。
-  - 母音列化は `vowel_utils.text_to_vowel_str`(pykakasi で漢字込みの任意文を母音化、空白区切り出力)。
+  - 原文を「。」(! ? も含む)で文分割し、空白詰め・日本語含む・長さ 2〜20 字でフィルタ。
+  - 母音列化は `vowel_utils.text_to_vowel_str`(pykakasi で漢字込みの任意文を母音化、空白区切り出力)。長音「ー」と読点「、」は読みの位置にそのままトークンとして出力する。
+  - 句点「。」は文末に 50% の確率で付与し、`vowels` 末尾と `sentence` 末尾の両方に付ける(句点あり/なしの両方を学習させ、入力に句点が無くても復元できるようにする)。
   - ctx は同一原文内の直前の文(原文)。文チャンク先頭は `<NONE>`。さらに `none_ctx_ratio`(既定0.5)で `<NONE>` に落とし、母音列のみでも復元できるようにする。
 
 ```mermaid
 graph LR
   cc["CC-100-ja (streaming)"] --> split["。で文分割 + クリーニング"]
   subs["字幕 OpenSubtitles/JESC"] --> split
-  split --> filt["長さ2-40字 + 日本語含む + 重複除去"]
+  split --> filt["長さ2-20字 + 日本語含む + 重複除去"]
   filt --> vow["text_to_vowel_str で母音列化"]
   vow --> ds["jsonl.gz: vowels, ctx, sentence"]
   ds --> sft["LoRA SFT (sentence部のみ loss)"]
@@ -69,13 +70,13 @@ pip install -r requirements.txt
 python make_vowel_dataset.py --cc100_rows 1000000 --subs_rows 1000000
 ```
 
-学習/評価データは `../dataset/project06/{train,eval}.jsonl.gz` に出力される。
+学習/評価データは `../dataset/project06/{train02,eval02}.jsonl.gz` に出力される。
 
 ### 学習
 
 ```bash
 python train_vowel_lora.py \
-  --train_path ../dataset/project06/train.jsonl.gz --eval_path ../dataset/project06/eval.jsonl.gz \
+  --train_path ../dataset/project06/train02.jsonl.gz --eval_path ../dataset/project06/eval02.jsonl.gz \
   --max_train_records 2000000 --epochs 2 --batch 8 --grad_accum 4
 ```
 
@@ -92,7 +93,7 @@ python infer.py --lora_dir logs/train_YYYYMMDD_HHMMSS --vowels "i a a a a e i a 
 
 ```bash
 python paper/scripts/dump_predictions.py --lora_dir logs/train_YYYYMMDD_HHMMSS \
-  --eval_path ../dataset/project06/eval.jsonl.gz --max_records 500 --k 8 \
+  --eval_path ../dataset/project06/eval02.jsonl.gz --max_records 500 --k 8 \
   --out paper/results/preds_proposed.jsonl
 python paper/scripts/evaluate_for_paper.py --pred_path paper/results/preds_proposed.jsonl \
   --out_dir paper/results --tag proposed
@@ -142,8 +143,11 @@ STUDY_NO_MODEL=1 python study_app.py
 
 ```json
 {"vowels": "o o a e n i a a u a a", "ctx": "<NONE>", "sentence": "今日は天気が悪かった"}
-{"vowels": "i a a a a e i a u", "ctx": "今日は天気が悪かった", "sentence": "今から帰ります"}
+{"vowels": "o n i i a 、 i i e n i 。", "ctx": "<NONE>", "sentence": "今日は、いい天気。"}
+{"vowels": "o ー i ー", "ctx": "<NONE>", "sentence": "コーヒー"}
 ```
+
+長音「ー」・読点「、」は母音列の中にトークンとして出る。句点「。」は文末に 50% の確率で付き、その際は `vowels`・`sentence` 双方に付く。
 
 ## プロンプト形式 (train/infer/serve で完全一致)
 
@@ -162,7 +166,8 @@ SENTENCE:
 
 | 項目 | デフォルト | 説明 |
 | --- | --- | --- |
-| min_len / max_len | 2 / 40 | 文の文字数フィルタ |
+| min_len / max_len | 2 / 20 | 文の文字数フィルタ |
+| 句点「。」付与率 | 0.5 | 文末に「。」を付ける割合(vowels/sentence 双方) |
 | none_ctx_ratio | 0.5 | CTX を `<NONE>` にする割合(母音列のみ入力対応) |
 | max_seq_len | 128 | 学習時の最大トークン長 |
 | num_beams / k | 8 / 8 | 推論のビーム幅・候補数 |

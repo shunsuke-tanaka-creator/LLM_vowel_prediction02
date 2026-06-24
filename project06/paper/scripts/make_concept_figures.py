@@ -33,38 +33,38 @@ def arrow(ax, x1, y1, x2, y2):
 
 
 def overview():
-    fig, ax = plt.subplots(figsize=(6.2, 2.4))
-    ax.set_xlim(0, 13); ax.set_ylim(0, 4); ax.axis("off")
-    box(ax, 0.2, 1.2, 2.2, 1.6, "User input\n5 vowels (+n)\n'a i a o u'", fc="#fdf0e6")
-    box(ax, 2.9, 1.2, 2.4, 1.6, "Vowelizer\n$f_{vowel}$\n(pykakasi)")
-    box(ax, 5.7, 1.2, 2.9, 1.6, "LLM candidate gen.\nMiniCPM4-0.5B\n+ LoRA")
-    box(ax, 9.0, 0.8, 2.8, 2.4, "Top-k\ncandidates\n1. ...\n2. ...\n3. ...", fc="#e8f5ec")
-    arrow(ax, 2.4, 2.0, 2.9, 2.0)
-    arrow(ax, 5.3, 2.0, 5.7, 2.0)
-    arrow(ax, 8.6, 2.0, 9.0, 2.0)
-    box(ax, 5.7, 3.1, 2.9, 0.6, "optional context c", fc="#f3f3f3")
-    arrow(ax, 7.15, 3.1, 7.15, 2.8)
+    # 追加: 学習時(上段)と推論時(下段)の2経路に分けて描く
+    fig, ax = plt.subplots(figsize=(6.4, 3.6))
+    ax.set_xlim(0, 13); ax.set_ylim(0, 8); ax.axis("off")
+
+    # 追加: 学習時(オフライン) 経路 — コーパス文を母音化して(母音列,文)対でLLMを学習
+    ax.text(0.2, 7.5, "Training (offline)", fontsize=9, fontweight="bold")
+    box(ax, 0.2, 5.2, 2.2, 1.6, "Corpus\nsentences", fc="#fdf0e6")
+    box(ax, 2.9, 5.2, 2.4, 1.6, "Vowelizer\n$f_{vowel}$\n(pykakasi)")
+    box(ax, 5.8, 5.2, 2.9, 1.6, "(vowel, text)\npairs")
+    box(ax, 9.2, 5.2, 3.0, 1.6, "LLM fine-tune\nMiniCPM4-0.5B\n+ LoRA", fc="#e8f5ec")
+    arrow(ax, 2.4, 6.0, 2.9, 6.0)
+    arrow(ax, 5.3, 6.0, 5.8, 6.0)
+    arrow(ax, 8.7, 6.0, 9.2, 6.0)
+
+    # 追加: 推論時(ユーザ利用) 経路 — ユーザが母音+nを直接入力(母音化部を通らない)
+    ax.text(0.2, 3.5, "Inference (user)", fontsize=9, fontweight="bold")
+    box(ax, 0.2, 1.2, 2.6, 1.6, "User input\n5 vowels (+n)\n'a i a o u'", fc="#fdf0e6")
+    box(ax, 5.8, 1.2, 2.9, 1.6, "LLM candidate gen.\n(trained model)")
+    box(ax, 9.2, 0.8, 3.0, 2.4, "Top-k\ncandidates\n1. ...\n2. ...\n3. ...", fc="#e8f5ec")
+    arrow(ax, 2.8, 2.0, 5.8, 2.0)
+    arrow(ax, 8.7, 2.0, 9.2, 2.0)
+    box(ax, 5.8, 3.1, 2.9, 0.6, "optional context c", fc="#f3f3f3")
+    arrow(ax, 7.25, 3.1, 7.25, 2.8)
+
     fig.savefig(os.path.join(FIG_DIR, "fig_overview.png"), dpi=150, bbox_inches="tight")
     plt.close(fig)
     print("saved fig_overview.png")
 
 
 def flow():
-    fig, axes = plt.subplots(1, 2, figsize=(6.4, 2.6))
-    ax = axes[0]
-    ax.set_xlim(0, 6); ax.set_ylim(0, 8); ax.axis("off")
-    steps = ["Input text / reading x", "Reading (kana) via pykakasi",
-             "Vowel string v", "Beam search over P(y|v)", "Dedup -> Top-k"]
-    y = 7.0
-    for i, s in enumerate(steps):
-        box(ax, 0.5, y, 5.0, 0.9, s)
-        if i < len(steps) - 1:
-            arrow(ax, 3.0, y, 3.0, y - 0.6)
-        y -= 1.5
-    ax.set_title("Processing flow", fontsize=9)
-
-    # 右: 学習曲線は実ログ curve.png を使う旨のプレースホルダ(黄色=未確定)
-    ax2 = axes[1]
+    # 変更: 図1と被る処理フロー(左)を削除し、学習曲線のみの図にする
+    fig, ax2 = plt.subplots(figsize=(4.2, 3.0))
     ax2.axis("off")
     ax2.text(0.5, 0.5,
              "Training curve\n(TBD: insert real\nloss curve, loss -> ~1.2)",

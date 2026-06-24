@@ -23,6 +23,7 @@ def split_sentences(text: str) -> List[str]:
     for chunk in _RE_SPLIT.split(text):
         s = clean_line(chunk)
         s = s.rstrip("。！？")  # 文末区切りは除く
+        s = s.lstrip("、")  # 追加: 文頭の読点は除去(分割断片の先頭「、」対策)
         if s:
             out.append(s)
     return out

@@ -53,12 +53,13 @@
     <input id="name" type="text" placeholder="例: tanaka01" autocomplete="off">
     <div style="height:12px"></div>
     <label>モードを選択</label>
-    <button class="btn" onclick="startTask('ime_hira')">IMEひらがな(推論なし)</button>
-    <button class="btn sub" onclick="startTask('vowel_noinfer')">母音入力(推論なし)</button>
-    <button class="btn" onclick="startTask('ime')">標準IME(推論あり)</button>
-    <button class="btn sub" onclick="startTask('vowel')">母音(推論こみ)</button>
-    <button class="btn ok" onclick="startSurvey('vowel')">アンケート母音</button>
-    <button class="btn sub" onclick="runAnalyze()">解析</button>
+    <button class="btn" onclick="startTask('ime_hira')">A. IMEひらがな(推論なし)</button>
+    <button class="btn sub" onclick="startTask('vowel_noinfer')">B. 母音入力(推論なし)</button>
+    <button class="btn" onclick="startTask('ime')">C. 標準IME(推論あり)</button>
+    <button class="btn sub" onclick="startTask('vowel')">D. 母音(推論こみ)</button>
+    <button class="btn sub" onclick="startTask('vowel_infer')">E. 母音(推論あり・直接入力)</button>
+    <button class="btn ok" onclick="startSurvey('vowel')">F. アンケート母音</button>
+    <button class="btn sub" onclick="runAnalyze()">G. 解析</button>
     <div id="analyzeResult" class="muted" style="margin-top:10px; white-space:pre-line"></div>
   </div>
 
@@ -91,6 +92,11 @@
     </div>
   </div>
 
+  <!-- デバッグ: 実機(iPhone)で提示フェーズ/タイマーの動きを画面に出すログ。STUDY_DEBUG=1 起動時のみ表示。変更。 -->
+  <div id="dbg" class="hidden" style="position:fixed; left:0; right:0; bottom:0; max-height:3.9em; overflow:auto;
+       background:rgba(0,0,0,.85); color:#0f0; font:10px/1.3 monospace; padding:3px 6px; z-index:9999;
+       white-space:pre-wrap;"></div>
+
   <!-- アンケート -->
   <div id="survey" class="card hidden">
     <div class="muted" id="surveyHint"></div>
@@ -102,6 +108,7 @@
 
 <script>
 const API = "";  // 同一オリジン
+const DEBUG = ("__STUDY_DEBUG__" === "1");  // 変更: STUDY_DEBUG=1 起動時のみ true(serve側で置換)。デバッグログ表示の切替。
 let state = {};
 
 // 追加: 測定セッション識別子。ページを開いた時刻(分まで)で固定し、全リクエストに付与する。
@@ -114,6 +121,15 @@ const SESSION = (function(){
 
 function $(id){ return document.getElementById(id); }
 function nameVal(){ return ($("name").value || "").trim(); }
+
+// デバッグ: 画面下部のログ領域に時刻付きで出力。STUDY_DEBUG=1 起動時のみ表示。変更。
+function dbg(msg){
+  if(!DEBUG) return;  // 追加: 非デバッグ時は何もしない
+  const el = $("dbg"); if(!el) return;
+  el.classList.remove("hidden");  // 追加: デバッグ時はログ領域を表示
+  const t = new Date().toISOString().slice(11,23);
+  el.textContent = `[${t}] ${msg}\n` + el.textContent;
+}
 
 function goHome(){
   $("home").classList.remove("hidden");
@@ -143,6 +159,7 @@ async function startTask(mode){
 function isVowelMode(){ return state.mode === 'vowel' || state.mode === 'vowel_noinfer'; }
 
 function showNext(){
+  dbg("showNext() idx="+state.idx+"/"+ (state.sentences? state.sentences.length:"?") +" started="+state.started);  // 追加(デバッグ)
   if(state.idx >= state.sentences.length){
     alert("このモードの課題は終了です。アンケートに進んでください。");
     goHome();
@@ -152,7 +169,8 @@ function showNext(){
   state.cur = s;
   const modeLabel = state.mode==='ime' ? 'IME'
     : state.mode==='ime_hira' ? 'IMEひらがな'
-    : state.mode==='vowel' ? '母音(推論こみ)' : '母音(推論なし)';
+    : state.mode==='vowel' ? '母音(推論こみ)'
+    : state.mode==='vowel_infer' ? '母音(推論あり・直接入力)' : '母音(推論なし)';
   $("progress").textContent = `${modeLabel}  L${s.level}  (${state.idx+1}/${state.sentences.length})`;
   $("phaseShow").classList.remove("hidden");
   $("phaseShow").classList.remove("invisible");  // 追加: 前回付けた invisible を解除して再表示
@@ -173,6 +191,7 @@ function showNext(){
 // 最初の1回はユーザのタップ(ジェスチャ)で呼ばれる。ここで入力欄を focus してキーボードを開かせる。
 // それ以降は showNext() から自動で呼ばれる(focus は最初のものを維持するため触らない)。
 function beginShow(){
+  dbg("beginShow() 呼出 started="+state.started);  // 追加(デバッグ)
   $("readyBtn").classList.add("hidden");
   // キーボードを開いたまま保つため、提示フェーズ中に入力欄を先に focus する
   const ans = $("answer");
@@ -192,6 +211,10 @@ function beginShow(){
     $("vowelArea").classList.add("hidden");
     $("inputHint").textContent = "";
     ans.placeholder = "ひらがなで入力(例: でんわ)";  // 追加: 漢字変換せず全てひらがなで入力
+  } else if(state.mode === 'vowel_infer'){
+    $("vowelArea").classList.add("hidden");  // 追加: 母音列は打たず、予測変換で直接かな/漢字を入力
+    $("inputHint").textContent = "";
+    ans.placeholder = "予測変換で入力(例: おはよう)";  // 追加
   } else {
     $("vowelArea").classList.add("hidden");
     $("inputHint").textContent = "";  // 変更: キーワード下のうっすらした説明文を非表示
@@ -205,15 +228,18 @@ function beginShow(){
   // 提示時間: 一律3秒で自動的に隠れる
   let sec = 3;
   $("showTimer").textContent = `あと ${sec} 秒(覚えてください。まだ入力できません)`;
+  dbg("タイマー開始 sec=3 / target="+s.text);  // 追加(デバッグ)
   clearInterval(state.showTimerId);
   state.showTimerId = setInterval(()=>{
     sec--;
+    dbg("tick sec="+sec);  // 追加(デバッグ)
     if(sec<=0){ clearInterval(state.showTimerId); hideTarget(); }
     else $("showTimer").textContent = `あと ${sec} 秒(覚えてください。まだ入力できません)`;
   },1000);
 }
 
 function hideTarget(){
+  dbg("hideTarget() 呼出 → 入力可能に");  // 追加(デバッグ)
   clearInterval(state.showTimerId);
   $("phaseShow").classList.add("invisible");  // 変更: hidden(display:none)ではなく invisible で隠し、高さを保つ(レイアウトジャンプ防止)
   $("phaseInput").classList.remove("hidden");
@@ -290,7 +316,7 @@ async function submitTrial(){
     if(!typed){ alert("入力してください"); return; }
     typedVowels = typed;
   } else {
-    // ime / ime_hira: 最終的な文を入力(ime_hira はひらがなのみ)
+    // ime / ime_hira / vowel_infer: 最終的な文を入力(ime_hira はひらがなのみ / vowel_infer は予測変換で直接入力)
     typed = $("answer").value.trim();
     if(!typed){ alert("入力してください"); return; }
   }
@@ -298,8 +324,19 @@ async function submitTrial(){
   // ime/ime_hira/vowel(候補選択) は文字列一致、vowel_noinfer は打った母音列が正解母音列と一致で正解。
   let success;
   if(state.mode === 'vowel_noinfer'){
+    // 母音(推論なし): 正解母音列と一致で正解。スペース有無を問わない(毎回スペースを打たなくてよい)。変更。
+    const norm = (s)=> s.replace(/\s+/g, "");  // 追加: スペースを全除去して比較
     const goldV = (state.cur.vowels || "").trim();
-    success = (typed.split(/\s+/).join(" ") === goldV) ? 1 : 0;
+    success = (norm(typed) === norm(goldV)) ? 1 : 0;
+  } else if(state.mode === 'ime_hira'){
+    // ime_hira: 全てひらがな入力のモード。漢字・カタカナが混ざったら不正解。
+    // 受理は「ひらがなのみの正解表記」: text がひらがなのみならそれ、加えて alts 内のひらがな表記。追加。
+    // 読点「、」句点「。」は有無を問わない(打っても打たなくても通す)。変更。
+    const isHira = (s)=> /^[\u3040-\u309Fー、。\s]+$/.test(s);  // 追加: ひらがな(+長音/読点/句点)のみか判定
+    const stripPunct = (s)=> s.replace(/[、。\s]/g, "");  // 追加: 読点/句点/空白を除去して比較
+    const cands = [state.cur.text, ...((state.cur.alts || "").split("|").filter(Boolean))];
+    const accepts = cands.filter(isHira).map(stripPunct);  // 変更: 読点/句点を除いた形で受理判定
+    success = (isHira(typed) && accepts.includes(stripPunct(typed))) ? 1 : 0;
   } else {
     const accepts = [state.cur.text, ...((state.cur.alts || "").split("|").filter(Boolean))];
     success = accepts.includes(typed) ? 1 : 0;
@@ -380,7 +417,7 @@ async function runAnalyze(){
   const r = await fetch(`${API}/api/analyze?name=${encodeURIComponent(nameVal())}&session=${encodeURIComponent(SESSION)}`);
   if(!r.ok){ $("analyzeResult").textContent = "解析失敗: " + (await r.text()); return; }
   const d = await r.json();
-  const LABEL = { ime:"標準IME(推論あり)", vowel_noinfer:"母音(推論なし)" };
+  const LABEL = { ime:"標準IME(推論あり)", vowel_noinfer:"母音(推論なし)", vowel_infer:"母音(推論あり・直接入力)" };
   let out = "";
   for(const md of d.modes){
     const n = d.n[md] || 0;
@@ -388,7 +425,7 @@ async function runAnalyze(){
     out += `${LABEL[md]} (n=${n})\n`
       + `  t_total ${d.t_total_ms[md].toFixed(0)}ms / t_init ${d.t_init_ms[md].toFixed(0)}ms`
       + ` / iki ${d.mean_iki_ms[md].toFixed(0)}ms / BS ${d.backspaces[md].toFixed(1)}`
-      + ` / 母音CER ${d.vowel_cer[md].toFixed(3)}\n`;
+      + (md === 'vowel_infer' ? "\n" : ` / 母音CER ${d.vowel_cer[md].toFixed(3)}\n`);  // 変更: 母音列を打たない vowel_infer は CER 非表示
   }
   $("analyzeResult").textContent = out;
 }

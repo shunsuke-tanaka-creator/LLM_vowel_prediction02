@@ -45,3 +45,6 @@ env/
 
 # OS / エディタ
 .DS_Store
+
+# 学習データ
+project06/study/bu/

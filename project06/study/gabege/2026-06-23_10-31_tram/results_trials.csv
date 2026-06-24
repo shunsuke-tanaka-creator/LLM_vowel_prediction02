@@ -1,0 +1,7 @@
+timestamp,name,mode,level,sentence_id,gold,typed,typed_vowels,gold_vowels,vowel_cer,t_init_ms,t_total_ms,keystrokes,backspaces,mean_iki_ms,selected_rank,success
+2026-06-23T10:35:31,tram,ime_hira,1,L1-01,おはよう,おはよう,,o a o u,,16.0,6391.0,10,7,357.3,-1,1
+2026-06-23T10:35:38,tram,ime_hira,1,L1-02,パソコン,電話,,a o o n,,1896.0,2385.0,7,1,137.1,-1,0
+2026-06-23T10:35:48,tram,ime_hira,1,L1-02,パソコン,パソコン,,a o o n,,527.0,3093.0,8,0,190.4,-1,1
+2026-06-23T10:35:54,tram,ime_hira,1,L1-03,電話,電話,,e n a,,378.0,1997.0,7,1,171.6,-1,1
+2026-06-23T10:36:01,tram,ime_hira,2,L2-01,今から帰る,今から帰る,,i a a a a e u,,806.0,2844.0,13,1,136.2,-1,1
+2026-06-23T10:36:19,tram,vowel_noinfer,1,L1-01,おはよう,おはよう,おはよう,o a o u,1.0,1694.0,3929.0,8,2,359.7,-1,0

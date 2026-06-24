@@ -1,0 +1,2 @@
+timestamp,name,mode,level,sentence_id,gold,typed,typed_vowels,gold_vowels,vowel_cer,t_init_ms,t_total_ms,keystrokes,backspaces,mean_iki_ms,selected_rank,success
+2026-06-23T10:47:13,debugX,vowel_noinfer,1,L1-03,電話,e n a,e n a,e n a,0.0,500.0,2000.0,3,0,300.0,-1,1

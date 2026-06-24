@@ -23,8 +23,8 @@ def predict(model, tok, vowels: str, ctx: str, k: int, num_beams: int, max_new_t
         input_ids=ids,
         attention_mask=enc["attention_mask"],
         max_new_tokens=max_new_tokens,
-        num_beams=max(num_beams, k),
-        num_return_sequences=max(num_beams, k),
+        num_beams=num_beams,  # 追加: ビーム幅をそのまま使う(アブレーションで beam<k を評価可能にする)
+        num_return_sequences=min(num_beams, k),  # 追加: 返す候補数はビーム幅を超えられない
         do_sample=False,
         early_stopping=True,
         pad_token_id=tok.pad_token_id,

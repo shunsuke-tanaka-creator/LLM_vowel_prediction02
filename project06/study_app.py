@@ -180,8 +180,9 @@ TRIAL_FIELDS = [
 
 
 def _char_cer(hyp: str, ref: str) -> float:
-    """母音列(空白区切りトークン列)の編集距離 / 参照長。母音変換誤り率に使う。"""
-    a, b = hyp.split(), ref.split()
+    """母音列の編集距離 / 参照長。母音変換誤り率に使う。
+    変更: スペース有無に依存しないよう、空白を除去した文字単位で比較する(母音入力でスペースを打たなくてもよい)。"""
+    a, b = list(hyp.replace(" ", "")), list(ref.replace(" ", ""))  # 変更: 空白除去して文字単位に
     n, m = len(a), len(b)
     if m == 0:
         return 0.0 if n == 0 else 1.0
@@ -278,10 +279,10 @@ def api_questions():
 # ---- 解析(3,4 をもとに: ime(標準IME/推論あり) と vowel_noinfer(母音/推論なし) の平均を返す) ----
 @app.get("/api/analyze")
 def api_analyze(name: str, session: str = ""):
-    """被験者の results_trials.csv から、ime と vowel_noinfer の success=1 試行について各指標の平均を返す。
-    変更: 解析対象を表の 3(ime) と 4 系の vowel_noinfer の2モードに限定。"""
+    """被験者の results_trials.csv から、ime / vowel_noinfer / vowel_infer の success=1 試行について各指標の平均を返す。
+    変更: 解析対象を ime(標準IME) / vowel_noinfer(母音/推論なし) / vowel_infer(母音/推論あり・直接入力) の3モードに。"""
     path = os.path.join(subject_dir(name, session), "results_trials.csv")
-    modes = ["ime", "vowel_noinfer"]
+    modes = ["ime", "vowel_noinfer", "vowel_infer"]  # 追加: vowel_infer(母音/推論あり・直接入力)も解析対象に
     metrics = ["t_total_ms", "t_init_ms", "mean_iki_ms", "backspaces", "vowel_cer"]  # 追加: backspaces, vowel_cer も集計
     sums = {m: {md: 0.0 for md in modes} for m in metrics}
     counts = {md: 0 for md in modes}
@@ -310,7 +311,10 @@ def index():
     if not os.path.exists(html_path):
         raise HTTPException(500, "study/index.html がありません")
     with open(html_path, "r", encoding="utf-8") as f:
-        return HTMLResponse(f.read())
+        html = f.read()
+    # 追加: STUDY_DEBUG=1 起動時のみフロントのデバッグログを有効化(プレースホルダを置換)
+    html = html.replace("__STUDY_DEBUG__", "1" if os.environ.get("STUDY_DEBUG") else "0")
+    return HTMLResponse(html)
 
 
 if __name__ == "__main__":

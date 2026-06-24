@@ -44,6 +44,9 @@ curl -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" \
 
 LORA_DIR=logs/train_20260611_134432 uvicorn serve_api:app --host 0.0.0.0 --port 8000
 
+LORA_DIR=logs/train_20260622_045837 uvicorn serve_api:app --host 0.0.0.0 --port 8000
+
+
 
 
  python -u train_rerank_lora.py --train_path ../dataset/project02_2/train_k03.jsonl.gz --eval_path ../dataset/project02_2/eval_k03.jsonl.gz --out_dir lora_out_minicpm4_k03 --max_train_records 500000 --max_eval_records 10000 --epochs 1 --batch 12 --grad_accum 4 --max_seq_len 320 --no_grad_ckpt
@@ -53,6 +56,8 @@ LORA_DIR=logs/train_20260611_134432 uvicorn serve_api:app --host 0.0.0.0 --port 
  http://100.87.35.125:8001/
 
  STUDY_NO_MODEL=1 PORT=8001 python study_app.py
+
+ STUDY_DEBUG=1
 
  python study_app.py
 
@@ -80,3 +85,16 @@ python paper/scripts/evaluate_for_paper.py --pred_path paper/results/preds_propo
   --out_dir paper/results --tag proposed
 
 
+## 0622
+### code
+
+python make_vowel_dataset.py --cc100_rows 1000000 --subs_rows 1000000
+
+python train_vowel_lora.py \
+  --train_path ../dataset/project06/train02.jsonl.gz \
+  --eval_path ../dataset/project06/eval02.jsonl.gz \
+  --max_train_records 2000000 --epochs 2 --batch 8 --grad_accum 4
+
+LORA_DIR=logs/train_20260622_045837 uvicorn serve_api:app --host 0.0.0.0 --port 8000
+LORA_DIR=logs/train_20260622_140822 uvicorn serve_api:app --host 0.0.0.0 --port 8000
+  

@@ -1,0 +1,4 @@
+更新時刻: 2026-06-23 12:57:17
+進捗     : 137/188 [00:08<00:03, 16.77it/s]
+loss     : {'loss': 1.2104, 'grad_norm': 9.963820457458496, 'learning_rate': 7.013397047529653e-05, 'epoch': 0.6}
+eval     : {'eval_loss': 1.2379404306411743, 'eval_runtime': 11.1395, 'eval_samples_per_second': 134.387, 'eval_steps_per_second': 16.877, 'epoch': 0.51}

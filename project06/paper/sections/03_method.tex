@@ -1,19 +1,21 @@
 \section{提案手法}
 
 \subsection{全体構成}
-提案システムは，(1) 入力文または読みを母音列へ変換する母音化部，
-(2) 母音列（と任意の文脈）から日本語候補を生成・順位付けする LLM 候補生成部，
-からなる（図\ref{fig:overview}）．
-ユーザは 5 母音と撥音のみを入力し，システムが上位 $k$ 件の候補文を提示する．
+提案システムは学習時と推論時で経路が異なる（図\ref{fig:overview}）．
+学習時（オフライン）には，日本語コーパスの各文を母音化部で母音列へ変換し，
+得られた（母音列，文）対で LLM 候補生成部を追加学習する． % 追加: 母音化部は学習データ生成に用いることを明記
+推論時（ユーザ利用時）には，ユーザが 5 母音と撥音のみを直接入力し，
+その母音列（と任意の文脈）から LLM 候補生成部が上位 $k$ 件の候補文を生成・提示する． % 追加: 推論時はユーザ入力が直接母音列であることを明記
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.95\columnwidth]{figures/fig_overview.png}
-  \caption{提案システムの概要．母音列（＋任意の文脈）から上位$k$候補を生成・提示する．}
+  \caption{提案システムの概要．学習時はコーパス文を母音化部で母音列へ変換して（母音列，文）対を作り LLM を追加学習する．推論時はユーザが母音＋撥音を直接入力し，母音列（＋任意の文脈）から上位$k$候補を生成・提示する．}
   \label{fig:overview}
 \end{figure}
 
 \subsection{母音化}
+母音化はコーパス文から学習用の母音列を生成する処理である． % 追加: 母音化の役割を学習データ生成として明記
 入力文または読み列を $x$，母音列を $\bm{v}$ とし，母音化を写像 $f_{\mathrm{vowel}}$ で表す．
 \begin{equation}
   \bm{v} = f_{\mathrm{vowel}}(x)
@@ -23,10 +25,11 @@
 コードから確認した写像規則は表\ref{tab:vowelrule}の通りである．
 
 \begin{table}[t]
-  \centering\small
+  \centering\footnotesize
   \caption{母音化規則}
   \label{tab:vowelrule}
-  \begin{tabular}{ll}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{@{}lp{4.6cm}@{}}
     \toprule
     対象 & 扱い \\
     \midrule
@@ -35,7 +38,7 @@
     拗音「ゃゅょ」 & 2 文字を 1 母音に集約（例 きょ$\to$\texttt{o}）\\
     促音「っ」 & 無視（出力しない）\\
     長音「ー」 & 無視（例 コーヒー$\to$\texttt{o i}）\\
-    小書き「ゎゕゖ」 & 無視 \\
+    小書き「ゎ」等 & 無視 \\
     カタカナ & 一旦ひらがな化して母音化 \\
     句読点・記号 & 出力に現れない \\
     数字・英字 & 読みが付かず脱落（例 100$\to$空，ABC$\to$空）\\
@@ -44,7 +47,7 @@
 \end{table}
 
 この写像により，「今日は天気が悪かった」は
-\texttt{o n i i a e n i a a u a a} となる．
+\texttt{o u a e n i a a u a a} となる．
 子音・濁清の区別が失われるため，同一母音列に複数の日本語表現が対応する
 本質的曖昧性が生じる（「寒い」「暑い」$\to$\texttt{a u i}）．
 

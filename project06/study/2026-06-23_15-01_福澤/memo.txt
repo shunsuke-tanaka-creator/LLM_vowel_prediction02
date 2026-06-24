@@ -1,0 +1,7 @@
+success = 1 のみで集計しました。
+
+mode	件数	平均 t_total_ms
+ime_hira	9	12068.4 ms
+vowel_noinfer	9	5055.9 ms
+ime	9	16056.9 ms
+vowel_infer	9	3672.1 ms

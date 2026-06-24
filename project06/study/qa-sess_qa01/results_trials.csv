@@ -1,0 +1,2 @@
+timestamp,name,mode,level,sentence_id,gold,typed,typed_vowels,gold_vowels,vowel_cer,t_init_ms,t_total_ms,keystrokes,backspaces,mean_iki_ms,selected_rank,success
+2026-06-23T10:54:31,qa01,vowel_infer,1,L1-01,おはよう,おはよう,,o a o u,,500.0,1500.0,4,0,200.0,-1,1

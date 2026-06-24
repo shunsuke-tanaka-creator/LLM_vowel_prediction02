@@ -1,0 +1,4 @@
+timestamp,name,mode,level,sentence_id,gold,typed,typed_vowels,gold_vowels,vowel_cer,t_init_ms,t_total_ms,keystrokes,backspaces,mean_iki_ms,selected_rank,success
+2026-06-23T11:03:31,qa-sp,vowel_noinfer,1,L1-01,おはよう,oaou,oaou,o a o u,0.0,1.0,1.0,4,0,1.0,-1,1
+2026-06-23T11:03:31,qa-sp,vowel_noinfer,1,L1-01,おはよう,o a o u,o a o u,o a o u,0.0,1.0,1.0,4,0,1.0,-1,1
+2026-06-23T11:03:31,qa-sp,vowel_noinfer,1,L1-01,おはよう,oaau,oaau,o a o u,0.25,1.0,1.0,4,0,1.0,-1,0

@@ -1,0 +1,11 @@
+timestamp,name,mode,level,sentence_id,gold,typed,typed_vowels,gold_vowels,vowel_cer,t_init_ms,t_total_ms,keystrokes,backspaces,mean_iki_ms,selected_rank,success
+2026-06-23T11:06:17,Haha,vowel_infer,1,L1-01,おはよう,おはよう,,o a o u,,2889.0,540.0,1,0,0.0,-1,1
+2026-06-23T11:06:25,Haha,vowel_infer,1,L1-02,パソコン,パソコン,,a o o n,,5004.0,409.0,1,0,0.0,-1,1
+2026-06-23T11:06:33,Haha,vowel_infer,1,L1-03,電話,電話,,e n a,,4315.0,981.0,1,1,634.0,-1,1
+2026-06-23T11:07:13,Haha,vowel_infer,2,L2-01,今から帰る,今から帰る,,i a a a a e u,,23080.0,13616.0,2,3,883.5,-1,1
+2026-06-23T11:07:20,Haha,vowel_infer,2,L2-02,気をつけてね,気をつけてね,,i o u e e e,,3655.0,524.0,1,0,0.0,-1,1
+2026-06-23T11:07:28,Haha,vowel_infer,2,L2-03,お腹がすいた,お腹がすいた,,o a a a u i a,,3670.0,557.0,1,0,0.0,-1,1
+2026-06-23T11:08:02,Haha,vowel_infer,3,L3-01,来週はパソコンを買いに行く,来週はパソコンを、買いに行く,,a i u u a a o o n o a i i i u,,13578.0,18093.0,3,3,3466.8,-1,1
+2026-06-23T11:09:16,Haha,vowel_infer,3,L3-02,子供の病院に行こう,子供と病院に行こう,,o o o o o u i n i i o u,,21646.0,48370.0,25,29,905.2,-1,0
+2026-06-23T11:09:27,Haha,vowel_infer,3,L3-02,子供の病院に行こう,子供の病院に行こう,,o o o o o u i n i i o u,,244.0,6904.0,20,18,154.7,-1,1
+2026-06-23T11:09:41,Haha,vowel_infer,3,L3-03,車で行こうか、電車で行こうか,車で行こうか、電車で行こうか,,u u a e i o u a 、 e n a e i o u a,,4138.0,6891.0,3,0,3200.5,-1,1

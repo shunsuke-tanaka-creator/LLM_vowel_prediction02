@@ -199,7 +199,7 @@ def count_toggle_keys(hira: str) -> int:
             keys += _SMALL_TO_TAPS[ch]
             continue
         vs = hira_to_vowels_strict(ch)  # 清音/濁音1文字 -> 母音1個
-        if vs:
+        if vs and vs[0] in _VOWEL_TO_TAPS:  # 追加: 「、」等の非母音トークンは打鍵対象外なのでスキップ
             keys += _VOWEL_TO_TAPS[vs[0]]
         if ch in _DAKUON or ch in _HANDAKU:
             keys += 1  # 濁点/半濁点キー

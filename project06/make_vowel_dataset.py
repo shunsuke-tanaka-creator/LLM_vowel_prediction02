@@ -64,38 +64,63 @@ def iter_subs_texts(max_rows: int):
                 break
 
 
-def text_to_examples(text: str, min_len: int, max_len: int, none_ctx_ratio: float):
-    """1つの原文を「。」区切りで文に分割し、{vowels, ctx, sentence} のリストを返す。"""
+def text_to_examples(text: str, min_len: int, max_len: int, none_ctx_ratio: float,
+                     comma_ctx_ratio: float = 0.5):
+    """1つの原文を「。」区切りで文に分割し、{vowels, ctx, sentence} のリストを返す。
+
+    「、」を含む文は comma_ctx_ratio の確率で最初の「、」で分割し、前半を ctx
+    (末尾の「、」は除去)、後半を sentence として ctx あり事例を増やす(追加)。
+    """
     sents = split_sentences(text)
     out = []
     prev = PROMPT_CTX_NONE  # 直前の文(原文)。チャンク先頭は <NONE>
     for s in sents:
-        if not is_valid_sentence(s, min_len, max_len):
+        # 追加: 「、」を含む文は一定確率で最初の「、」で ctx/sentence に分割する
+        comma_ctx = None
+        body = s
+        if "、" in s and random.random() < comma_ctx_ratio:
+            head, tail = s.split("、", 1)  # 最初の「、」で前半/後半に分割
+            head = head.rstrip("、")  # ctx 側末尾の「、」は除去
+            tail = tail.lstrip("、")  # 後半先頭の「、」は除去(連続読点・先頭読点対策)
+            if head and tail:  # 前半・後半ともに非空のときだけ分割を採用
+                comma_ctx = head
+                body = tail
+
+        if not is_valid_sentence(body, min_len, max_len):
             prev = PROMPT_CTX_NONE  # 無効文で文脈を切る
             continue
-        vowels = text_to_vowel_str(s)
+        vowels = text_to_vowel_str(body)
         if not vowels:
             prev = PROMPT_CTX_NONE
             continue
-        ctx = prev
-        if random.random() < none_ctx_ratio:  # 一定割合で母音列のみ入力にする
-            ctx = PROMPT_CTX_NONE
-        out.append({"vowels": vowels, "ctx": ctx, "sentence": s})
-        prev = s
+        if comma_ctx is not None and is_valid_sentence(comma_ctx, min_len, max_len):
+            ctx = comma_ctx  # 文内「、」分割で作った ctx は潰さない
+        else:
+            ctx = prev
+            if random.random() < none_ctx_ratio:  # 一定割合で母音列のみ入力にする
+                ctx = PROMPT_CTX_NONE
+        sentence = body
+        if random.random() < 0.5:  # 追加: 文末「。」を50%(文単位)で vowels/sentence 両方に付与
+            sentence = body + "。"
+            vowels = vowels + " 。"
+        out.append({"vowels": vowels, "ctx": ctx, "sentence": sentence})
+        prev = s  # ctx は記号なしの素の文を引き継ぐ
     return out
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out_train", type=str, default="../dataset/project06/train.jsonl.gz")
-    ap.add_argument("--out_eval", type=str, default="../dataset/project06/eval.jsonl.gz")
+    ap.add_argument("--out_train", type=str, default="../dataset/project06/train03.jsonl.gz")
+    ap.add_argument("--out_eval", type=str, default="../dataset/project06/eval03.jsonl.gz")
 
     ap.add_argument("--cc100_rows", type=int, default=1_000_000, help="CC-100 から読む原文行数")
     ap.add_argument("--subs_rows", type=int, default=1_000_000, help="字幕から読む原文行数(両ソース合算)")
 
     ap.add_argument("--min_len", type=int, default=2, help="文の最小文字数")
-    ap.add_argument("--max_len", type=int, default=40, help="文の最大文字数")
+    ap.add_argument("--max_len", type=int, default=20, help="文の最大文字数")
     ap.add_argument("--none_ctx_ratio", type=float, default=0.5, help="CTX を <NONE> にする割合")
+    ap.add_argument("--comma_ctx_ratio", type=float, default=0.5,
+                    help="追加: 「、」を含む文を最初の「、」で分割して文内 ctx を作る割合")
     ap.add_argument("--eval_ratio", type=float, default=0.002)
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
@@ -135,7 +160,8 @@ def main():
 
     for text in interleave():
         pbar.update(1)
-        for ex in text_to_examples(text, args.min_len, args.max_len, args.none_ctx_ratio):
+        for ex in text_to_examples(text, args.min_len, args.max_len, args.none_ctx_ratio,
+                                   args.comma_ctx_ratio):
             if ex["sentence"] in seen_set:  # 重複文は捨てる
                 continue
             seen_set.add(ex["sentence"])

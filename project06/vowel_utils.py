@@ -66,7 +66,7 @@ YOON_MAP = {
     "ぴゃ": "a", "ぴゅ": "u", "ぴょ": "o",
 }
 
-IGNORE_CHARS = set("っーゎゕゖ")
+IGNORE_CHARS = set("っゎゕゖ")  # 追加: ー は無視せずトークン化する
 
 _RE_ALLOWED_WORD = re.compile(r"^[\u3040-\u309F\u4E00-\u9FFF々]+$")
 
@@ -89,6 +89,16 @@ def hira_to_vowels_strict(hira: str) -> List[str]:
 
         if ch == "ん":
             out.append("n")
+            i += 1
+            continue
+
+        if ch == "ー":  # 追加: 長音符は読みの位置にそのままトークンとして出す
+            out.append("ー")
+            i += 1
+            continue
+
+        if ch == "、":  # 追加: 読中点は読みの位置にそのままトークンとして出す
+            out.append("、")
             i += 1
             continue
 

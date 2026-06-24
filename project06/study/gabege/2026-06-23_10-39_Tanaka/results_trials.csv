@@ -1,0 +1,3 @@
+timestamp,name,mode,level,sentence_id,gold,typed,typed_vowels,gold_vowels,vowel_cer,t_init_ms,t_total_ms,keystrokes,backspaces,mean_iki_ms,selected_rank,success
+2026-06-23T10:44:49,Tanaka,vowel_noinfer,1,L1-01,おはよう,おはよう,おはよう,o a o u,1.0,25487.0,648.0,1,0,0.0,-1,0
+2026-06-23T10:44:57,Tanaka,vowel_noinfer,1,L1-01,おはよう,おはよう,おはよう,o a o u,1.0,3328.0,361.0,1,0,0.0,-1,0
