@@ -1,0 +1,32 @@
+%ルビ
+\def\ruby#1#2{%
+  \leavevmode \setbox0=\hbox{\mathstrut#1}\setbox1=\hbox{\tiny#2}%
+  \ifdim\wd0>\wd1 \dimen0=\wd0 \else \dimen0=\wd1 \fi
+  \hbox{\kanjiskip=\fill
+    \vbox{\hbox to \dimen0{\tiny \hfil#2\hfil}%
+       \nointerlineskip
+       \hbox to \dimen0{\hfil\mathstrut#1\hfil}}}}
+% <<DISPLAYSTYLE mathematical characters>>
+%\newcommand{\Frac}[2]{\displaystyle\frac{\raisebox{-1.8pt}{$#1$}}{\raisebox{0.8pt}{$\:#2\:$}}}
+\newcommand{\Frac}{\displaystyle\frac}
+\newcommand{\Prod}{\displaystyle\prod}
+\newcommand{\Sum}{\displaystyle\sum}
+\newcommand{\Int}{\displaystyle\int}
+\newcommand{\Sqrt}[1]{\sqrt{#1\,}}
+\newcommand{\Lim}{\displaystyle\lim}
+\newcommand{\Cup}{\displaystyle\bigcup}
+\newcommand{\Cap}{\displaystyle\bigcap}
+\newcommand{\Min}{\displaystyle\min}
+\newcommand{\Max}{\displaystyle\max}
+\newcommand{\Vec}[1]{\overrightarrow{#1}}
+\newcommand{\Vecb}[1]{\mbox{\boldmath $#1$}}
+\newcommand{\NumB}[1]{\noindent\fbox{{\large\bf#1}}\hspace{3pt}}
+% <<日本式不等号>>
+\makeatletter\def\le{\mathrel{\mathpalette\gl@align<}}
+\def\ge{\mathrel{\mathpalette\gl@align>}}
+\def\gl@align#1#2{\lower.6ex\vbox{\baselineskip\z@skip\lineskip\z@%
+\ialign{$\m@th#1\hfil##\hfil$\crcr#2\crcr=\crcr}}}
+\makeatother
+
+\def\labelenumi{(\theenumi)}
+\def\theenumi{\roman{enumi}}

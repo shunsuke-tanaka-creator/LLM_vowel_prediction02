@@ -3,9 +3,9 @@
 \subsection{全体構成}
 提案システムは学習時と推論時で経路が異なる（図\ref{fig:overview}）．
 学習時（オフライン）には，日本語コーパスの各文を母音化部で母音列へ変換し，
-得られた（母音列，文）対で LLM 候補生成部を追加学習する． % 追加: 母音化部は学習データ生成に用いることを明記
+得られた（母音列，文）対で LLM 候補生成部を LoRA により追加学習する．
 推論時（ユーザ利用時）には，ユーザが 5 母音と撥音のみを直接入力し，
-その母音列（と任意の文脈）から LLM 候補生成部が上位 $k$ 件の候補文を生成・提示する． % 追加: 推論時はユーザ入力が直接母音列であることを明記
+その母音列（と任意の文脈）から LLM 候補生成部が上位 $k$ 件の候補文を生成・提示する．
 
 \begin{figure}[t]
   \centering
@@ -15,7 +15,7 @@
 \end{figure}
 
 \subsection{母音化}
-母音化はコーパス文から学習用の母音列を生成する処理である． % 追加: 母音化の役割を学習データ生成として明記
+母音化はコーパス文から学習用の母音列を生成する処理である．
 入力文または読み列を $x$，母音列を $\bm{v}$ とし，母音化を写像 $f_{\mathrm{vowel}}$ で表す．
 \begin{equation}
   \bm{v} = f_{\mathrm{vowel}}(x)
@@ -51,6 +51,18 @@
 子音・濁清の区別が失われるため，同一母音列に複数の日本語表現が対応する
 本質的曖昧性が生じる（「寒い」「暑い」$\to$\texttt{a u i}）．
 
+学習データは CC-100 日本語版と字幕コーパス（OpenSubtitles 日本語，JESC）を
+同程度の件数で交互に混合して構築する．
+原文を「。！？」で文に分割し，空白を詰めたうえで，
+日本語を含み長さ 2--20 字の文のみを残し，各文を母音化して
+母音列・文脈・正解文の 3 項組を生成する．
+文脈には同一原文内の直前の文を入れるほか，
+文中に読点「、」を含む文では確率的に最初の読点で前半・後半に分割し，
+前半を文脈・後半を正解文とすることで文脈ありの事例を増やす．
+また既定で割合 0.5 で文脈なしに落とし，母音列のみでも候補生成できるよう学習する．
+この結果，学習・評価データの約 3 割が文脈ありの事例となり，
+実件数は train 750{,}029 件，eval 1{,}497 件であった．
+
 \subsection{候補生成と順位付け}
 母音列 $\bm{v}$ から日本語文 $y$ を生成する条件付き分布 $P_\theta(y\mid \bm{v})$ を LLM で表す．
 最尤候補は
@@ -61,9 +73,10 @@
 \begin{equation}
   \mathcal{Y}_k(\bm{v}) = \operatorname*{TopK}_{y} P_\theta(y \mid \bm{v})
 \end{equation}
-と定義する．実装ではビーム探索（ビーム幅 8）により $\mathcal{Y}_k$ を生成し，
-重複を除いた上位 $k$ 件を候補として提示する．
+と定義する．実装ではビーム探索（ビーム幅 8，最大新規トークン 64）により
+$\mathcal{Y}_k$ を生成し，重複を除いた上位 $k$ 件を候補として提示する．
 任意で直前の文を文脈 $c$ として与えられ，その場合は $P_\theta(y\mid \bm{v}, c)$ を用いる．
+プロンプトを定め，可変部である文（\texttt{SENTENCE:} 以降）＋EOS のみに損失を与える．
 
 \subsection{LoRA による追加学習}
 候補生成器は事前学習済み LLM を LoRA で追加学習して得る．
@@ -76,5 +89,52 @@
 \end{equation}
 であり，$W$ を固定して $A, B$ のみを学習する．
 これにより全パラメータ更新に比べ少ない学習量でタスク適応が可能となる．
-本研究では母音列$\to$文の生成を教師あり微調整（SFT）として学習し，
-損失はプロンプト部をマスクして文（と EOS）部にのみ与える．
+本研究では母音列$\to$文の生成を教師あり微調整（SFT）として学習する．
+
+ベースモデルは MiniCPM4-0.5B（revision \texttt{2aaa97c53d} を pin）を
+bfloat16 で読み込む．主な設定値は表\ref{tab:setup}を参照されたい．
+学習は 46{,}876 ステップで完了し，学習・評価損失はそれぞれ約 0.96，約 1.0 付近まで低下した．
+
+\begin{table}[t]
+  \centering\small
+  \caption{実験設定}
+  \label{tab:setup}
+  \begin{tabular}{ll}
+    \toprule
+    項目 & 値 \\
+    \midrule
+    base model & openbmb/MiniCPM4-0.5B \\
+    training data & CC-100-ja + 字幕（混合）\\
+    eval data & 同分布の hold-out \\
+    train records & 750{,}029（上限 2{,}000{,}000 指定）\\
+    eval records & 1{,}497 \\
+    epoch & 2 \\
+    batch size & 8 \\
+    grad accum & 4（実効 32）\\
+    max seq len & 128 \\
+    LoRA rank $r$ & 32 \\
+    LoRA alpha $\alpha$ & 64 \\
+    LoRA dropout & 0.05 \\
+    target modules & q,k,v,o,gate,up,down\_proj \\
+    learning rate & $1\times10^{-4}$ \\
+    optimizer & AdamW \\
+    GPU & NVIDIA GeForce RTX 5060 Ti \\
+    OS & Ubuntu 24.04.4 LTS \\
+    PyTorch & 2.12.0 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{母音キーボードの実装}
+提案手法に基づき，スマートフォン上で動作する母音キーボードを試作した
+（図\ref{fig:keyboard}）．キーは 5 母音（\texttt{a, i, u, e, o}）と撥音（\texttt{n}）
+を中心とした最小限の構成であり，各キーを大きく配置している。
+キー数を絞ったことで画面においてキーボードが占める割合は小さく，
+表示領域を広く確保できる。
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/fig_keyboard.png}
+  \caption{試作した母音キーボードの画面例．5 母音と撥音を中心とした少数キー構成により，各キーを大きく配置している．}
+  \label{fig:keyboard}
+\end{figure}

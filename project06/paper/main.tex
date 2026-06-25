@@ -1,10 +1,10 @@
 % !TEX program = platex
-% 母音入力 + LoRA fine-tuned LLM による超省入力型日本語入力システム
-% コンパイル: platex main.tex && pbibtex main && platex main.tex && platex main.tex && dvipdfmx main.dvi
-\documentclass[10pt,twocolumn]{jarticle}
-
-\usepackage{amsmath,amssymb}
+% 母音入力 + LoRA fine-tuned LLM による超省入力型日本語入力システム（FSS2026 投稿フォーマット）
+% コンパイル: platex main.tex && platex main.tex && dvipdfmx main.dvi
+\documentclass[a4paper,10pt,twocolumn]{myjarticle2}
 \usepackage[dvipdfmx]{graphicx}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{url}
 \usepackage{bm}
@@ -12,46 +12,62 @@
 \definecolor{tbd}{rgb}{1,1,0}                       % 追加: 未確定箇所の背景色(黄)
 \newcommand{\TBD}[1]{\colorbox{tbd}{#1}}            % 追加: 短い仮値/未確定をハイライト
 \newcommand{\TBDbox}[1]{\par\noindent\colorbox{tbd}{\parbox{\columnwidth}{#1}}\par}  % 追加: 折返しが要る長文注記用
-
-\setlength{\textwidth}{180mm}
-\setlength{\textheight}{250mm}
-\setlength{\oddsidemargin}{-10mm}
-\setlength{\topmargin}{-15mm}
-\setlength{\columnsep}{8mm}
-
-\title{大規模言語モデルを用いた人にやさしい母音ベース省入力日本語インタフェース\\
-\large A Vowel-Based Low-Effort Japanese Text Interface Using Large Language Models}
-\author{
-○ 田中　峻介$^1$ \quad 久保田　直行$^1$\\
-○ Tanaka Shunsuke$^1$, \quad Naoyuki Kubota$^1$\\
-$^1$ 東京都立大学\\
-$^1$Tokyo Metropolitan University}
-\date{}
+% 追加: header.tex の数式マクロ(\Cup,\Cap,\Vec)が amssymb と衝突するため、読込前に未定義化する
+\let\Cup\relax \let\Cap\relax \let\Vec\relax
+\input{header} % 修正: プリアンブルでは \include ではなく \input を使う
+\pagestyle{empty}
+\setlength{\topmargin}{6mm}
+\setlength{\oddsidemargin}{-4mm}
+\setlength{\evensidemargin}{-4mm}
+\setlength{\textwidth}{170mm}
+\setlength{\headsep}{0pt}
+\setlength{\headheight}{0pt}
+\setlength{\textheight}{235mm}
+\setlength{\columnsep}{5mm}
 
 \begin{document}
-\twocolumn[
-\maketitle
-% Abstract（英語）。段抜き(1列)・中央寄せ・やや幅を狭めて表示する。
+\twocolumn[%
+\vspace{-20mm}
 \begin{center}
-\begin{minipage}{0.85\textwidth}
-\centering
-\textbf{Abstract:} With the widespread use of mobile devices, Japanese text input interfaces play an important role in everyday information interaction. However, software keyboards require many keys to be displayed on a limited screen area. As a result, the visual and touch-sensitive area of each key becomes small, which can increase the likelihood of input errors during touch operation. This issue may be particularly burdensome for older adults, as age-related changes in motor ability can make it difficult to accurately distinguish and press small keys.
+{\LARGE\bf 大規模言語モデルを用いた人にやさしい母音ベース省入力日本語インタフェース}
+\vspace{2mm}\par\noindent
+{\large A Vowel-Based Low-Effort Japanese Text Interface Using Large Language Models}
+\vspace{2mm}\par\noindent
+{\large
+\begin{tabular}{cc}
+$\bigcirc$ 田中　峻介$^{1}$， & 久保田　直行$^{1}$\\
+$\bigcirc$ Tanaka Shunsuke$^{1}$, & Naoyuki Kubota$^{1}$\\
+\multicolumn{2}{c}{$^{1}$東京都立大学}\\
+\multicolumn{2}{c}{$^{1}$Tokyo Metropolitan University}\\
+\end{tabular}}
+\vspace{2mm}\par\noindent
+\begin{minipage}{150mm}
+{\small{\bf Abstract:}
+With the widespread use of mobile devices, Japanese text input interfaces play an important role in everyday information interaction. However, software keyboards require many keys to be displayed on a limited screen area. As a result, the visual and touch-sensitive area of each key becomes small, which can increase the likelihood of input errors during touch operation. This issue may be particularly burdensome for older adults, as age-related changes in motor ability can make it difficult to accurately distinguish and press small keys.
 In this study, we propose an ultra-low-input Japanese text entry method that uses only vowel information as input. Using a large language model additionally fine-tuned with LoRA, the proposed method estimates and ranks contextually appropriate candidate words from vowel sequences.
 This study aims to clarify the feasibility of a vowel-only input interface and its effectiveness as a human-friendly text input support technology.
+\par\noindent}
 \end{minipage}
+\par\noindent
 \end{center}
-\vspace{1.5em}
 ]
 
 \input{sections/01_intro}
 \input{sections/02_related_work}
 \input{sections/03_method}
-\input{sections/04_implementation}
 \input{sections/05_experiment}
 \input{sections/06_results_discussion}
 \input{sections/07_conclusion}
 
-\bibliographystyle{junsrt}
-\bibliography{refs}
+\input{sections/08_bib}
+
+%%%%% 連絡先 %%%%%
+\vspace{-1mm}\par\noindent
+\subsection*{連絡先}
+\noindent
+\begin{tabular}{l}
+田中　峻介（東京都立大学）\\
+E-mail: {\tt syunsukeyuto@gmail.com}
+\end{tabular}
 
 \end{document}
