@@ -20,11 +20,11 @@ FIG_DIR = os.path.join(os.path.dirname(__file__), "..", "figures")
 os.makedirs(FIG_DIR, exist_ok=True)
 
 
-def box(ax, x, y, w, h, text, fc="#eef3fb"):
+def box(ax, x, y, w, h, text, fc="#eef3fb", fontsize=9):  # 変更: 文字サイズを引数化
     p = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.02",
                        linewidth=1.2, edgecolor="#33506e", facecolor=fc)
     ax.add_patch(p)
-    ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=9)
+    ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=fontsize)
 
 
 def arrow(ax, x1, y1, x2, y2):
@@ -34,28 +34,29 @@ def arrow(ax, x1, y1, x2, y2):
 
 def overview():
     # 追加: 学習時(上段)と推論時(下段)の2経路に分けて描く
-    fig, ax = plt.subplots(figsize=(6.4, 3.6))
+    # 変更: 文字2倍(18pt)に合わせ、キャンバスとボックスを拡大して余白を確保
+    fig, ax = plt.subplots(figsize=(11.0, 6.4))
     ax.set_xlim(0, 13); ax.set_ylim(0, 8); ax.axis("off")
 
     # 追加: 学習時(オフライン) 経路 — コーパス文を母音化して(母音列,文)対でLLMを学習
-    ax.text(0.2, 7.5, "Training (offline)", fontsize=9, fontweight="bold")
-    box(ax, 0.2, 5.2, 2.2, 1.6, "Corpus\nsentences", fc="#fdf0e6")
-    box(ax, 2.9, 5.2, 2.4, 1.6, "Vowelizer\n$f_{vowel}$\n(pykakasi)")
-    box(ax, 5.8, 5.2, 2.9, 1.6, "(vowel, text)\npairs")
-    box(ax, 9.2, 5.2, 3.0, 1.6, "LLM fine-tune\nMiniCPM4-0.5B\n+ LoRA", fc="#e8f5ec")
-    arrow(ax, 2.4, 6.0, 2.9, 6.0)
-    arrow(ax, 5.3, 6.0, 5.8, 6.0)
-    arrow(ax, 8.7, 6.0, 9.2, 6.0)
+    ax.text(0.2, 7.6, "Training (offline)", fontsize=18, fontweight="bold")  # 変更: 文字2倍(9→18)
+    box(ax, 0.2, 5.0, 2.6, 1.8, "Corpus\nsentences", fc="#fdf0e6", fontsize=18)
+    box(ax, 3.3, 5.0, 2.8, 1.8, "Vowelizer\n$f_{vowel}$\n(pykakasi)", fontsize=18)
+    box(ax, 6.6, 5.0, 2.8, 1.8, "(vowel, text)\npairs", fontsize=18)
+    box(ax, 9.9, 5.0, 3.0, 1.8, "LLM fine-tune\nMiniCPM4-0.5B\n+ LoRA", fc="#e8f5ec", fontsize=18)
+    arrow(ax, 2.8, 5.9, 3.3, 5.9)
+    arrow(ax, 6.1, 5.9, 6.6, 5.9)
+    arrow(ax, 9.4, 5.9, 9.9, 5.9)
 
     # 追加: 推論時(ユーザ利用) 経路 — ユーザが母音+nを直接入力(母音化部を通らない)
-    ax.text(0.2, 3.5, "Inference (user)", fontsize=9, fontweight="bold")
-    box(ax, 0.2, 1.2, 2.6, 1.6, "User input\n5 vowels (+n)\n'a i a o u'", fc="#fdf0e6")
-    box(ax, 5.8, 1.2, 2.9, 1.6, "LLM candidate gen.\n(trained model)")
-    box(ax, 9.2, 0.8, 3.0, 2.4, "Top-k\ncandidates\n1. ...\n2. ...\n3. ...", fc="#e8f5ec")
-    arrow(ax, 2.8, 2.0, 5.8, 2.0)
-    arrow(ax, 8.7, 2.0, 9.2, 2.0)
-    box(ax, 5.8, 3.1, 2.9, 0.6, "optional context c", fc="#f3f3f3")
-    arrow(ax, 7.25, 3.1, 7.25, 2.8)
+    ax.text(0.2, 3.5, "Inference (user)", fontsize=18, fontweight="bold")  # 変更: 文字2倍(9→18)
+    box(ax, 0.2, 0.8, 2.8, 1.8, "User input\n5 vowels (+n)\n'a i a o u'", fc="#fdf0e6", fontsize=18)
+    box(ax, 6.6, 0.8, 3.0, 1.8, "LLM candidate gen.\n(trained model)", fontsize=18)
+    box(ax, 9.9, 0.4, 3.0, 2.6, "Top-k\ncandidates\n1. ...\n2. ...\n3. ...", fc="#e8f5ec", fontsize=18)
+    arrow(ax, 3.0, 1.7, 6.6, 1.7)
+    arrow(ax, 9.6, 1.7, 9.9, 1.7)
+    box(ax, 6.6, 2.9, 3.0, 0.8, "optional context c", fc="#f3f3f3", fontsize=18)
+    arrow(ax, 8.1, 2.9, 8.1, 2.6)
 
     fig.savefig(os.path.join(FIG_DIR, "fig_overview.png"), dpi=150, bbox_inches="tight")
     plt.close(fig)

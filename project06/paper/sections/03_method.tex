@@ -1,8 +1,10 @@
 \section{提案手法}
 
 \subsection{全体構成}
+候補生成には大規模言語モデル（LLM）を用い，CTX を考慮した母音列からの候補推定を行う．
+モデルの追加学習には LoRA（Low-Rank Adaptation）\cite{hu2022lora} を用いる．
 提案システムは学習時と推論時で経路が異なる（図\ref{fig:overview}）．
-学習時（オフライン）には，日本語コーパスの各文を母音化部で母音列へ変換し，
+学習時には，日本語コーパスの各文を母音化部で母音列へ変換し，
 得られた（母音列，文）対で LLM 候補生成部を LoRA により追加学習する．
 推論時（ユーザ利用時）には，ユーザが 5 母音と撥音のみを直接入力し，
 その母音列（と任意の CTX）から LLM 候補生成部が上位 $k$ 件の候補文を生成・提示する．
@@ -10,7 +12,7 @@
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.95\columnwidth]{figures/fig_overview.png}
-  \caption{提案システムの概要．学習時はコーパス文を母音化部で母音列へ変換して（母音列，文）対を作り LLM を追加学習する．推論時はユーザが母音＋撥音を直接入力し，母音列（＋任意の CTX）から上位$k$候補を生成・提示する．}
+  \caption{提案システムの概要．}
   \label{fig:overview}
 \end{figure}
 
@@ -70,8 +72,10 @@
 \begin{equation}
   \mathcal{Y}_k(\bm{v}) = \operatorname*{TopK}_{y} P_\theta(y \mid \bm{v})
 \end{equation}
-と定義する．実装ではビーム探索（ビーム幅 8，最大新規トークン 64）により
-$\mathcal{Y}_k$ を生成し，重複を除いた上位 $k$ 件を候補として提示する．
+と定義する．ただし文の探索空間は膨大であり厳密な $\mathcal{Y}_k$ は計算困難なため，
+実装ではビーム探索（ビーム幅 8，最大新規トークン 64）によりその近似
+$\hat{\mathcal{Y}}_k(\bm{v})$ を求め，重複を除いた上位 $k$ 件を候補として提示する．
+以降，特に断らない限り $\mathcal{Y}_k$ はこの近似集合を指す．
 任意で直前の文を CTX $c$ として与えられ，その場合は $P_\theta(y\mid \bm{v}, c)$ を用いる．
 プロンプトを定め，可変部である文（\texttt{SENTENCE:} 以降）＋EOS のみに損失を与える．
 
@@ -89,8 +93,7 @@ $\mathcal{Y}_k$ を生成し，重複を除いた上位 $k$ 件を候補とし�
 本研究では母音列$\to$文の生成を教師あり微調整（SFT）として学習する．
 
 ベースモデルは MiniCPM4-0.5B（revision \texttt{2aaa97c53d} を pin）を
-bfloat16 で読み込む．主な設定値は表\ref{tab:setup}を参照されたい．
-学習は 46{,}876 ステップで完了し，学習・評価損失はそれぞれ約 0.96，約 1.0 付近まで低下した．
+bfloat16 で読み込む．主な設定値は表\ref{tab:setup}に示す．
 
 \begin{table}[t]
   \centering\small
@@ -103,7 +106,7 @@ bfloat16 で読み込む．主な設定値は表\ref{tab:setup}を参照され�
     base model & openbmb/MiniCPM4-0.5B \\
     training data & CC-100-ja + 字幕（混合）\\
     eval data & 同分布の hold-out \\
-    train records & 750{,}029（上限 2{,}000{,}000 指定）\\
+    train records & 750{,}029\\
     eval records & 1{,}497 \\
     epoch & 2 \\
     batch size & 8 \\

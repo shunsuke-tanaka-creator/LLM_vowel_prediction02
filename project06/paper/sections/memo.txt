@@ -1,0 +1,14 @@
+cursorやらなくていいところ。
+- 参考文献久保田研のを引用する
+- 語彙の一致
+
+
+
+
+keywords
+- Japanese text input interfaces 
+
+
+図1の文字のサイズ大きく
+
+5の確認
