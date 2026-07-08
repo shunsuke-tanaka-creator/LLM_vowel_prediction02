@@ -15,7 +15,8 @@ CTX・ビーム幅・LoRA の寄与をアブレーションで切り分ける．
 候補提示型の入力支援であることを踏まえ，Top-1 の完全一致だけでなく
 Top-3 / Top-5 を重視する．母音入力 $\bm{v}_i$，正解 $y_i$，上位 $k$ 候補集合 $\mathcal{Y}_k(\bm{v}_i)$ に対し，
 \begin{equation}
-  \mathrm{Acc@}k = \frac{1}{N}\sum_{i=1}^{N}\mathbf{1}\!\left[y_i \in \mathcal{Y}_k(\bm{v}_i)\right]
+  \mathrm{Acc@}k = \frac{1}{N}\sum_{i=1}^{N}\mathbf{1}\!\left[y_i \in \mathcal{Y}_k(\bm{v}_i)\right],
+  \quad k \in \{1,3,5\}
 \end{equation}
 を用いる．
 

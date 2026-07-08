@@ -1,5 +1,6 @@
 % 参考文献。文献調査(Web)で確認した書誌情報。
-% note = {[要確認]} のエントリは主に著者名・一部ページが未確定。原論文PDFで確定すること。
+% 本文(sections/*.tex)で \cite されている文献のみを保持。[要確認]・未引用エントリは削除済み。  % 修正: 未使用・著者未確定エントリを整理
+% 注: 実際の組版は sections/08_bib.tex の thebibliography を使用（このファイルはメモ・調査用）。
 
 % ===== 母音のみを入力とする日本語入力（最も近い先行研究） =====
 @inproceedings{sugawara2023invisivowel,
@@ -29,177 +30,17 @@
   note      = {arXiv:2106.09685}
 }
 
-% ===== NASA-TLX =====
-@incollection{hart1988nasatlx,
-  author    = {Sandra G. Hart and Lowell E. Staveland},
-  title     = {Development of {NASA-TLX} (Task Load Index): Results of Empirical and Theoretical Research},
-  booktitle = {Human Mental Workload},
-  editor    = {P. A. Hancock and N. Meshkati},
-  series    = {Advances in Psychology},
-  volume    = {52},
-  pages     = {139--183},
-  publisher = {North-Holland},
-  year      = {1988},
-  doi       = {10.1016/S0166-4115(08)62386-9}
-}
+% ===== SUS =====  % 削除: 本文未引用のため refs.bib から除外(brooke1996sus)
 
-% ===== SUS =====
-@incollection{brooke1996sus,
-  author    = {John Brooke},
-  title     = {{SUS}: A Quick and Dirty Usability Scale},
-  booktitle = {Usability Evaluation in Industry},
-  editor    = {P. W. Jordan and B. Thomas and B. A. Weerdmeester and A. L. McClelland},
-  pages     = {189--194},
-  publisher = {Taylor \& Francis},
-  address   = {London},
-  year      = {1996}
-}
+% ===== 日本語フリック入力 =====  % 削除: 本文未引用・著者[要確認]のため除外(flick_input / flick_input_hmm)
 
-% ===== 日本語フリック入力 =====
-@inproceedings{flick_input,
-  author    = {[要確認]},
-  title     = {No-look Flick: Single-handed and Eyes-free Japanese Text Input System on Touch Screens of Mobile Devices},
-  booktitle = {Proc. 15th Int. Conf. on Human-Computer Interaction with Mobile Devices and Services (MobileHCI '13)},
-  year      = {2013},
-  doi       = {10.1145/2493190.2493243},
-  note      = {著者名 [要確認]}
-}
+% ===== スマートウォッチ / 小型端末向け入力 =====  % 削除: 本文未引用・著者[要確認]のため除外(smartwatch_input / smartwatch_tilt)
 
-@article{flick_input_hmm,
-  author    = {[要確認]},
-  title     = {Probabilistic Flick Keyboard Based on Hidden Markov Models for Japanese Touchscreen Input},
-  journal   = {Journal of Information Processing (IPSJ)},
-  volume    = {22},
-  number    = {2},
-  pages     = {410--[要確認]},
-  year      = {2014},
-  url       = {https://www.jstage.jst.go.jp/article/ipsjjip/22/2/22_410/_pdf},
-  note      = {著者名・終了ページ [要確認]}
-}
+% ===== VR/AR テキスト入力 =====  % 削除: 本文未引用・著者[要確認]のため除外(vr_input / vr_keyboard)
 
-% ===== スマートウォッチ / 小型端末向け入力 =====
-@article{smartwatch_input,
-  author    = {[要確認: Jonggi Hong ほか]},
-  title     = {A Comparative Evaluation of Three QWERTY Keyboards for a Smartwatch},
-  journal   = {Interacting with Computers},
-  year      = {[要確認]},
-  url       = {https://jonggi.github.io/papers/IWC_SplitBoard.pdf},
-  note      = {著者名・巻号・年・ページ [要確認]}
-}
+% ===== かな漢字変換 / 日本語IME =====  % 削除: 本文未引用・著者[要確認]のため除外(jpime / jpime_discriminative)
 
-@inproceedings{smartwatch_tilt,
-  author    = {[要確認]},
-  title     = {Text Entry Tap Accuracy and Exploration of Tilt Controlled Layered Interaction on Smartwatches},
-  booktitle = {Proc. 19th Int. Conf. on Human-Computer Interaction with Mobile Devices and Services (MobileHCI '17)},
-  year      = {2017},
-  doi       = {10.1145/3098279.3098560},
-  note      = {著者名 [要確認]}
-}
-
-% ===== 視線入力 =====
-@inproceedings{gaze_input,
-  author    = {Per Ola Kristensson and Keith Vertanen},
-  title     = {The Potential of Dwell-Free Eye-Typing for Fast Assistive Gaze Communication},
-  booktitle = {Proc. Symposium on Eye Tracking Research and Applications (ETRA '12)},
-  pages     = {241--244},
-  publisher = {ACM},
-  year      = {2012},
-  doi       = {10.1145/2168556.2168605}
-}
-
-% ===== VR/AR テキスト入力 =====
-@inproceedings{vr_input,
-  author    = {[要確認: Marco Speicher ほか]},
-  title     = {Selection-based Text Entry in Virtual Reality},
-  booktitle = {Proc. 2018 CHI Conference on Human Factors in Computing Systems (CHI '18)},
-  year      = {2018},
-  doi       = {10.1145/3173574.3174221},
-  note      = {著者名 [要確認]}
-}
-
-@inproceedings{vr_keyboard,
-  author    = {[要確認: Jens Grubert ほか]},
-  title     = {Physical Keyboards in Virtual Reality: Analysis of Typing Performance and Effects of Avatar Hands},
-  booktitle = {Proc. 2018 CHI Conference on Human Factors in Computing Systems (CHI '18)},
-  year      = {2018},
-  doi       = {10.1145/3173574.3173919},
-  note      = {著者名 [要確認]}
-}
-
-% ===== 省入力 / 曖昧入力の弁別 =====
-@inproceedings{ambiguous_input,
-  author    = {I. Scott MacKenzie and Hedy Kober and Derek Smith and Terry Jones and Eugene Skepner},
-  title     = {{LetterWise}: Prefix-based Disambiguation for Mobile Text Input},
-  booktitle = {Proc. ACM Symposium on User Interface Software and Technology (UIST 2001)},
-  pages     = {111--120},
-  publisher = {ACM},
-  year      = {2001}
-}
-
-@article{dasher,
-  author    = {David J. Ward and David J. C. MacKay},
-  title     = {Fast Hands-free Writing by Gaze Direction},
-  journal   = {Nature},
-  volume    = {418},
-  number    = {6900},
-  pages     = {838},
-  year      = {2002},
-  doi       = {10.1038/418838a},
-  note      = {arXiv:cs/0204030; DOI [要確認]}
-}
-
-% ===== かな漢字変換 / 日本語IME =====
-@inproceedings{jpime,
-  author    = {Taku Kudo and T. Komatsu and T. Hanaoka and J. Mukai and Y. Tabata},
-  title     = {{Mozc}: A Statistical Kana-Kanji Conversion System (in Japanese)},
-  booktitle = {言語処理学会年次大会発表論文集},
-  pages     = {948--951},
-  year      = {2011},
-  note      = {著者フルネーム・正確な書誌 [要確認]}
-}
-
-@inproceedings{jpime_discriminative,
-  author    = {[要確認]},
-  title     = {Discriminative Method for Japanese Kana-Kanji Input Method},
-  booktitle = {Proc. Workshop on Advances in Text Input Methods (WTIM 2011)},
-  publisher = {Association for Computational Linguistics},
-  year      = {2011},
-  url       = {https://aclanthology.org/W11-3502.pdf},
-  note      = {著者名・ページ [要確認]}
-}
-
-% ===== LLM による文脈推定 =====
-@inproceedings{brown2020gpt3,
-  author    = {Tom B. Brown and Benjamin Mann and Nick Ryder and Melanie Subbiah and Jared Kaplan and others},
-  title     = {Language Models are Few-Shot Learners},
-  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
-  volume    = {33},
-  year      = {2020},
-  url       = {https://arxiv.org/abs/2005.14165},
-  note      = {著者一部省略(et al.); arXiv:2005.14165}
-}
-
-% ===== テキスト入力性能指標 =====
-@inproceedings{mackenzie2002kspc,
-  author    = {I. Scott MacKenzie},
-  title     = {{KSPC} (Keystrokes per Character) as a Characteristic of Text Entry Techniques},
-  booktitle = {Proc. 4th Int. Symp. on Human Computer Interaction with Mobile Devices (Mobile HCI 2002)},
-  series    = {Lecture Notes in Computer Science},
-  volume    = {2411},
-  pages     = {195--210},
-  publisher = {Springer-Verlag},
-  year      = {2002}
-}
-
-@inproceedings{soukoreff2003,
-  author    = {R. William Soukoreff and I. Scott MacKenzie},
-  title     = {Metrics for Text Entry Research: An Evaluation of {MSD} and {KSPC}, and a New Unified Error Metric},
-  booktitle = {Proc. ACM Conference on Human Factors in Computing Systems (CHI 2003)},
-  pages     = {113--120},
-  publisher = {ACM},
-  year      = {2003},
-  doi       = {10.1145/642611.642632}
-}
+% ===== LLM による文脈推定 =====  % 削除: 本文未引用のため除外(brown2020gpt3)
 
 % ===== 追加: VR環境でのフリック入力（和文・触感フィードバック） =====
 @inproceedings{kiyohara2022vrflick,
@@ -238,4 +79,20 @@
   year      = {2024},
   doi       = {10.5100/jje.61.3E05-03},
   url       = {https://www.jstage.jst.go.jp/article/jje/61/Supplement/61_3E05-03/_pdf}
+}
+
+% ===== 追加: 自動車運転再開にむけた認知機能評価支援システム =====
+@article{kubota2018cognitive,
+  author    = {久保田 直行 and 大保 武慶 and 松田 雅弘 and 万治 淳史 and 青村 茂 and 武田 隆宏},
+  title     = {自動車運転再開にむけた認知機能評価支援システム},
+  year      = {2018}
+}
+
+% ===== 追加: 高齢者のためのスマートデバイス連動型シニアカー =====
+@inproceedings{nakamura2015seniorcar,
+  author    = {中村 佳雅 and 田松 孝慈 and 久保田 直行 and 坂下 和広},
+  title     = {高齢者のためのスマートデバイス連動型シニアカー},
+  booktitle = {ロボティクス・メカトロニクス講演会 (ROBOMECH2015)},
+  number    = {2A1-005},
+  year      = {2015}
 }

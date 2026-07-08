@@ -9,9 +9,11 @@
 \usepackage{url}
 \usepackage{bm}
 \usepackage[dvipdfmx]{color}                        % 追加: 黄色背景ハイライト用(dvipdfmxドライバ明示)
-\definecolor{tbd}{rgb}{1,1,0}                       % 追加: 未確定箇所の背景色(黄)
-\newcommand{\TBD}[1]{\colorbox{tbd}{#1}}            % 追加: 短い仮値/未確定をハイライト
-\newcommand{\TBDbox}[1]{\par\noindent\colorbox{tbd}{\parbox{\columnwidth}{#1}}\par}  % 追加: 折返しが要る長文注記用
+\definecolor{tbd}{rgb}{1,1,1}                       % 修正: 黄色ハイライトを消す(背景色を白に)
+\newcommand{\TBD}[1]{#1}            % 修正: 黄色ハイライトを消す(中身のみ表示)
+\newcommand{\TBDbox}[1]{\par\noindent{#1}\par}  % 修正: 黄色ハイライトを消す
+\newcommand{\HL}[1]{#1}             % 未使用(段落単位は \HLbox を使用)
+\newcommand{\HLbox}[1]{\par\noindent{#1}\par}  % 修正: 黄色ハイライトを消す
 % 追加: header.tex の数式マクロ(\Cup,\Cap,\Vec)が amssymb と衝突するため、読込前に未定義化する
 \let\Cup\relax \let\Cap\relax \let\Vec\relax
 \input{header} % 修正: プリアンブルでは \include ではなく \input を使う

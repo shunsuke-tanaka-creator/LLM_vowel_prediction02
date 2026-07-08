@@ -1,9 +1,9 @@
 \section{提案手法}
 
 \subsection{全体構成}
-候補生成には大規模言語モデル（LLM）を用い，CTX を考慮した母音列からの候補推定を行う．
+候補生成にはLLMを用い，CTX を考慮した母音列からの候補推定を行う．
 モデルの追加学習には LoRA（Low-Rank Adaptation）\cite{hu2022lora} を用いる．
-提案システムは学習時と推論時で経路が異なる（図\ref{fig:overview}）．
+提案システムは図\ref{fig:overview}のようになっている．
 学習時には，日本語コーパスの各文を母音化部で母音列へ変換し，
 得られた（母音列，文）対で LLM 候補生成部を LoRA により追加学習する．
 推論時（ユーザ利用時）には，ユーザが 5 母音と撥音のみを直接入力し，
@@ -11,7 +11,7 @@
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.95\columnwidth]{figures/fig_overview.png}
+  \includegraphics[width=82mm]{figures/fig_overview.png}  % 修正: 1列目(左カラム)幅内に収め中央揃え・2列目へはみ出さない
   \caption{提案システムの概要．}
   \label{fig:overview}
 \end{figure}
@@ -24,7 +24,7 @@
 \end{equation}
 実装では，漢字を含む任意文を pykakasi により読み（ひらがな）へ変換し，
 各かなを 1 母音記号へ写像して空白区切りで出力する．
-コードから確認した写像規則は表\ref{tab:vowelrule}の通りである．
+表\ref{tab:vowelrule}に写像規則を記す．
 
 \begin{table}[t]
   \centering\footnotesize
@@ -70,9 +70,11 @@
 \end{equation}
 であり，上位 $k$ 件の候補集合を
 \begin{equation}
-  \mathcal{Y}_k(\bm{v}) = \operatorname*{TopK}_{y} P_\theta(y \mid \bm{v})
+  \mathcal{Y}_k(\bm{v}) = \arg\operatorname*{TopK}_{y} P_\theta(y \mid \bm{v})
 \end{equation}
-と定義する．ただし文の探索空間は膨大であり厳密な $\mathcal{Y}_k$ は計算困難なため，
+と定義する．
+\HLbox{ここで $\arg\operatorname{TopK}$ は，条件付き確率 $P_\theta(y\mid \bm{v})$ を最大とする上位 $k$ 件の文 $y$ を返す演算子である．}
+ただし文の探索空間は膨大であり厳密な $\mathcal{Y}_k$ は計算困難なため，
 実装ではビーム探索（ビーム幅 8，最大新規トークン 64）によりその近似
 $\hat{\mathcal{Y}}_k(\bm{v})$ を求め，重複を除いた上位 $k$ 件を候補として提示する．
 以降，特に断らない限り $\mathcal{Y}_k$ はこの近似集合を指す．
@@ -81,19 +83,25 @@ $\hat{\mathcal{Y}}_k(\bm{v})$ を求め，重複を除いた上位 $k$ 件を候
 
 \subsection{LoRA による追加学習}
 候補生成器は事前学習済み LLM を LoRA で追加学習して得る．
-事前学習済み重みを $W$，学習対象の低ランク行列を $A, B$，rank を $r$，スケーリング係数を $\alpha$ とすると，
+\HLbox{
+ある線形層の事前学習済み重み行列を $W \in \mathbb{R}^{m \times n}$，
+その層への入力ベクトルを $x \in \mathbb{R}^{n}$，出力ベクトルを $h \in \mathbb{R}^{m}$ とする．
+LoRA では学習対象を低ランク行列 $B \in \mathbb{R}^{m \times r}$ と $A \in \mathbb{R}^{r \times n}$ の2つに限定する．
+ここで rank $r$ は $r \ll \min(m, n)$ を満たす小さな値，$\alpha$ はスケーリング係数である．
+更新後の重みと出力は，
 \begin{equation}
   W' = W + \Delta W = W + BA
 \end{equation}
 \begin{equation}
   h = Wx + \frac{\alpha}{r}BAx
 \end{equation}
-であり，$W$ を固定して $A, B$ のみを学習する．
+と表される（積 $BA \in \mathbb{R}^{m \times n}$ は $W$ と同じ形になる）．
+}  % 追加: 各記号の次元と役割を明記した修正ブロック(黄色ハイライト)
+学習時は $W$ を固定し，低ランク行列 $A, B$ のみを更新する．
 これにより全パラメータ更新に比べ少ない学習量でタスク適応が可能となる．
-本研究では母音列$\to$文の生成を教師あり微調整（SFT）として学習する．
+本研究では母音列$\to$文の生成を教師あり学習として構成する．
 
-ベースモデルは MiniCPM4-0.5B（revision \texttt{2aaa97c53d} を pin）を
-bfloat16 で読み込む．主な設定値は表\ref{tab:setup}に示す．
+ベースモデルは MiniCPM4-0.5Bを使用．主な設定値は表\ref{tab:setup}に示す．
 
 \begin{table}[t]
   \centering\small
@@ -135,3 +143,11 @@ bfloat16 で読み込む．主な設定値は表\ref{tab:setup}に示す．
   \caption{試作した母音キーボードの画面例．}
   \label{fig:keyboard}
 \end{figure}
+
+\subsection{AI コーディングエージェントの使用について}
+本研究では，データ分析コードの生成に AI アシスタント（Claude Opus 4.8，
+Anthropic 社，Amazon Bedrock モデル ID: us.anthropic.claude-opus-4-8）を
+搭載した AI コーディングエージェント（Cursor）を使用した。
+エージェントはコード生成・実行・エラー修正のサイクルを著者の監督下で
+自律的に反復した。著者は主要な処理ステップごとに結果を確認・承認した上で
+次のステップに進めた。生成されたすべてのコードは，著者がデータの照合により検証した。

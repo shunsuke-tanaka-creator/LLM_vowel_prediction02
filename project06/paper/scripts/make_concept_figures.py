@@ -33,30 +33,19 @@ def arrow(ax, x1, y1, x2, y2):
 
 
 def overview():
-    # 追加: 学習時(上段)と推論時(下段)の2経路に分けて描く
-    # 変更: 文字2倍(18pt)に合わせ、キャンバスとボックスを拡大して余白を確保
-    fig, ax = plt.subplots(figsize=(11.0, 6.4))
-    ax.set_xlim(0, 13); ax.set_ylim(0, 8); ax.axis("off")
+    # 変更: Inference 経路を削除し、Training(offline) のみを左から右へ並べる横長レイアウトにする
+    fig, ax = plt.subplots(figsize=(12.0, 3.2))
+    ax.set_xlim(0, 20); ax.set_ylim(0, 5); ax.axis("off")
 
-    # 追加: 学習時(オフライン) 経路 — コーパス文を母音化して(母音列,文)対でLLMを学習
-    ax.text(0.2, 7.6, "Training (offline)", fontsize=18, fontweight="bold")  # 変更: 文字2倍(9→18)
-    box(ax, 0.2, 5.0, 2.6, 1.8, "Corpus\nsentences", fc="#fdf0e6", fontsize=18)
-    box(ax, 3.3, 5.0, 2.8, 1.8, "Vowelizer\n$f_{vowel}$\n(pykakasi)", fontsize=18)
-    box(ax, 6.6, 5.0, 2.8, 1.8, "(vowel, text)\npairs", fontsize=18)
-    box(ax, 9.9, 5.0, 3.0, 1.8, "LLM fine-tune\nMiniCPM4-0.5B\n+ LoRA", fc="#e8f5ec", fontsize=18)
-    arrow(ax, 2.8, 5.9, 3.3, 5.9)
-    arrow(ax, 6.1, 5.9, 6.6, 5.9)
-    arrow(ax, 9.4, 5.9, 9.9, 5.9)
-
-    # 追加: 推論時(ユーザ利用) 経路 — ユーザが母音+nを直接入力(母音化部を通らない)
-    ax.text(0.2, 3.5, "Inference (user)", fontsize=18, fontweight="bold")  # 変更: 文字2倍(9→18)
-    box(ax, 0.2, 0.8, 2.8, 1.8, "User input\n5 vowels (+n)\n'a i a o u'", fc="#fdf0e6", fontsize=18)
-    box(ax, 6.6, 0.8, 3.0, 1.8, "LLM candidate gen.\n(trained model)", fontsize=18)
-    box(ax, 9.9, 0.4, 3.0, 2.6, "Top-k\ncandidates\n1. ...\n2. ...\n3. ...", fc="#e8f5ec", fontsize=18)
-    arrow(ax, 3.0, 1.7, 6.6, 1.7)
-    arrow(ax, 9.6, 1.7, 9.9, 1.7)
-    box(ax, 6.6, 2.9, 3.0, 0.8, "optional context c", fc="#f3f3f3", fontsize=18)
-    arrow(ax, 8.1, 2.9, 8.1, 2.6)
+    # 追加: 学習時(オフライン) 経路 — 左から右へ並べる
+    ax.text(0.3, 4.4, "Training (offline)", fontsize=18, fontweight="bold")
+    box(ax, 0.5, 1.4, 3.6, 1.8, "Corpus\nsentences", fc="#fdf0e6", fontsize=18)
+    box(ax, 5.2, 1.4, 3.6, 1.8, "Vowelizer\n$f_{vowel}$\n(pykakasi)", fontsize=18)
+    box(ax, 9.9, 1.4, 3.6, 1.8, "(vowel, text)\npairs", fontsize=18)
+    box(ax, 14.6, 1.4, 4.6, 1.8, "LLM fine-tune\nMiniCPM4-0.5B\n+ LoRA", fc="#e8f5ec", fontsize=18)
+    arrow(ax, 4.1, 2.3, 5.2, 2.3)
+    arrow(ax, 8.8, 2.3, 9.9, 2.3)
+    arrow(ax, 13.5, 2.3, 14.6, 2.3)
 
     fig.savefig(os.path.join(FIG_DIR, "fig_overview.png"), dpi=150, bbox_inches="tight")
     plt.close(fig)
