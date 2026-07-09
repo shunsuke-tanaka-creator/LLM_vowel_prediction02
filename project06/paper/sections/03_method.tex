@@ -3,7 +3,7 @@
 \subsection{全体構成}
 候補生成にはLLMを用い，CTX を考慮した母音列からの候補推定を行う．
 モデルの追加学習には LoRA（Low-Rank Adaptation）\cite{hu2022lora} を用いる．
-提案システムは図\ref{fig:overview}のようになっている．
+提案システムの概要を図\ref{fig:overview}に示す．
 学習時には，日本語コーパスの各文を母音化部で母音列へ変換し，
 得られた（母音列，文）対で LLM 候補生成部を LoRA により追加学習する．
 推論時（ユーザ利用時）には，ユーザが 5 母音と撥音のみを直接入力し，
@@ -22,7 +22,7 @@
 \begin{equation}
   \bm{v} = f_{\mathrm{vowel}}(x)
 \end{equation}
-実装では，漢字を含む任意文を pykakasi により読み（ひらがな）へ変換し，
+実装では，漢字を含む任意文を読み（ひらがな）へ変換し，
 各かなを 1 母音記号へ写像して空白区切りで出力する．
 表\ref{tab:vowelrule}に写像規則を記す．
 
@@ -53,14 +53,14 @@
 子音・濁清の区別が失われるため，同一母音列に複数の日本語表現が対応する
 本質的曖昧性が生じる（「寒い」「暑い」$\to$\texttt{a u i}）．
 
-学習データは CC-100 日本語版と字幕コーパス（OpenSubtitles 日本語，JESC）を
+学習データは CC-100 日本語版\cite{conneau2020xlmr}と字幕コーパス（OpenSubtitles 日本語\cite{lison2016opensubtitles}，JESC\cite{pryzant2018jesc}）を
 同程度の件数で交互に混合して構築する．
 原文を「。！？」で文に分割し，空白を詰めたうえで，
 日本語を含み長さ 2--20 字の文のみを残し，各文を母音化して
 母音列・CTX・正解文の 3 項組を生成する．CTX には同一原文内の直前の文を入れる．
-また既定で割合 0.5 で CTX なしに落とし，母音列のみでも候補生成できるよう学習する．
-この結果，学習・評価データの約 3 割が CTX ありの事例となり，
-実件数は train 750{,}029 件，eval 1{,}497 件であった．
+また学習時には 50\% の確率で CTX を除去し，母音列のみでも候補生成できるよう学習する．
+この結果，学習・評価データの約 3 割に CTXを含み，
+データ件数は train 750{,}029 件，eval 1{,}497 件であった．
 
 \subsection{候補生成と順位付け}
 母音列 $\bm{v}$ から日本語文 $y$ を生成する条件付き分布 $P_\theta(y\mid \bm{v})$ を LLM で表す．
@@ -73,7 +73,7 @@
   \mathcal{Y}_k(\bm{v}) = \arg\operatorname*{TopK}_{y} P_\theta(y \mid \bm{v})
 \end{equation}
 と定義する．
-\HLbox{ここで $\arg\operatorname{TopK}$ は，条件付き確率 $P_\theta(y\mid \bm{v})$ を最大とする上位 $k$ 件の文 $y$ を返す演算子である．}
+\HLbox{ここで $\arg\operatorname{TopK}$ は，条件付き確率 $P_\theta(y\mid \bm{v})$ が高い順に $k$ 件の文 $y$ を返す演算子である．}
 ただし文の探索空間は膨大であり厳密な $\mathcal{Y}_k$ は計算困難なため，
 実装ではビーム探索（ビーム幅 8，最大新規トークン 64）によりその近似
 $\hat{\mathcal{Y}}_k(\bm{v})$ を求め，重複を除いた上位 $k$ 件を候補として提示する．
@@ -82,7 +82,7 @@ $\hat{\mathcal{Y}}_k(\bm{v})$ を求め，重複を除いた上位 $k$ 件を候
 プロンプトを定め，可変部である文（\texttt{SENTENCE:} 以降）＋EOS のみに損失を与える．
 
 \subsection{LoRA による追加学習}
-候補生成器は事前学習済み LLM を LoRA で追加学習して得る．
+候補生成器は，事前学習済み LLM を LoRA により追加学習して構築する．
 \HLbox{
 ある線形層の事前学習済み重み行列を $W \in \mathbb{R}^{m \times n}$，
 その層への入力ベクトルを $x \in \mathbb{R}^{n}$，出力ベクトルを $h \in \mathbb{R}^{m}$ とする．
